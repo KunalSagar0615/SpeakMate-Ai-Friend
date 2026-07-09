@@ -78,23 +78,24 @@ public class AiServiceImpl implements AiService {
             switch (mode) {
 
                 case INTERVIEW ->
-                        prompt = """
-    You are an interviewer.
+                prompt = """
+        You are a technical interviewer.
 
-    Topic: %s
+        Topic: %s
 
-    %s
+        Difficulty: %s
 
-    Ask exactly ONE interview question.
-
-    Rules:
-    - Return only the question.
-    - Do not provide explanation.
-    - Do not provide answer.
-    - Do not provide markdown.
-    - Do not provide bullet points.
-    """
-                                .formatted(topic, difficultyInstruction);
+        Rules:
+        - Ask exactly ONE interview question.
+        - Focus primarily on theoretical concepts, fundamentals, OOP, Java, Spring Boot, DBMS, SQL, System Design, and practical understanding.
+        - Do NOT ask full coding problems.
+        - Small coding logic questions are allowed occasionally.
+        - Around 80%% theoretical questions and 20%% simple coding logic questions.
+        - Questions should match the difficulty level.
+        - Return only the question.
+        - Do not provide explanations, hints, answers, or markdown.
+        """
+                        .formatted(topic, difficultyInstruction);
 
                 case FRIEND ->
                         prompt = """
@@ -194,21 +195,95 @@ return aiQuestion;
 
                 case INTERVIEW ->
                         String.format(
-                                "You are an interview coach. Question: %s Answer: %s Give feedback in maximum 2 short sentences. Mention one good thing and one improvement if needed. Keep the response under 40 words. Do not ask any question. Do not generate follow-up questions. Do not continue the interview. Do not end with a question mark. Return feedback only.",
+                                """
+                                You are an expert technical interviewer.
+                
+                                Question:
+                                %s
+                
+                                Candidate Answer:
+                                %s
+                
+                                Analyze the answer carefully.
+                
+                                Rules:
+                                - Determine whether the answer is correct, partially correct, or incorrect.
+                                - If correct, explain briefly why it is correct.
+                                - If partially correct, explain what is correct and what is missing.
+                                - If incorrect, explain why it is incorrect and provide the correct answer.
+                                - Always refer to the actual question asked.
+                                - Do not give generic feedback such as "Good attempt" or "Needs improvement".
+                                - Be concise but informative.
+                                - Keep feedback within 3-6 sentences.
+                                - Return feedback only.
+                
+                                Feedback:
+                                """,
                                 question,
                                 answer
                         );
 
                 case FRIEND ->
                         String.format(
-                                "You are a friendly AI friend. User was asked: %s User replied: %s Respond naturally like a friend. Keep it short, friendly and do not evaluate the answer. Give only feedback on the user's response. Do not ask any question. Do not generate follow-up questions. Do not continue the conversation. Do not end with a question mark. Return feedback only.",
+                                """
+                                You are a friendly AI companion.
+                
+                                Question:
+                                %s
+                
+                                User Response:
+                                %s
+                
+                                Respond naturally like a supportive friend.
+                
+                                Rules:
+                                - Acknowledge the user's response.
+                                - React naturally to what the user said.
+                                - Do not judge, score, or evaluate.
+                                - Keep the response warm and conversational.
+                                - Keep it under 3 sentences.
+                                - Return feedback only.
+                
+                                Feedback:
+                                """,
                                 question,
                                 answer
                         );
 
                 case ENGLISH_COACH ->
                         String.format(
-                                "You are an English speaking coach. User Question: %s User Answer: %s Analyze the answer and provide Corrected Sentence, Grammar Feedback, Vocabulary Feedback and Natural English Version. Be encouraging and concise. Do not ask any question. Do not generate a new speaking prompt. Do not continue the conversation. Do not end with a question mark. Return feedback only.",
+                                """
+                                You are an English speaking coach.
+                
+                                User Question:
+                                %s
+                
+                                User Answer:
+                                %s
+                
+                                Analyze the answer.
+                
+                                Rules:
+                                - If grammar mistakes exist, show the corrected sentence.
+                                - Explain grammar mistakes briefly.
+                                - Suggest better vocabulary only if necessary.
+                                - Provide a more natural English version.
+                                - If the answer is already good, say so.
+                                - Be encouraging and concise.
+                                - Do not ask a new question.
+                                - Return feedback only.
+                
+                                Format:
+                
+                                Corrected Sentence:
+                                ...
+                
+                                Grammar Feedback:
+                                ...
+                
+                                Natural Version:
+                                ...
+                                """,
                                 question,
                                 answer
                         );
