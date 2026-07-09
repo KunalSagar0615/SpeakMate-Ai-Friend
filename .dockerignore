@@ -1,0 +1,6 @@
+target
+.idea
+.git
+.gitignore
+src/main/resources/application-dev.properties
+*.log
