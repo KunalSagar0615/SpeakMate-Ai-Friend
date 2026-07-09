@@ -40,11 +40,14 @@ public class SecurityConfig {
         return configuration
                 .getAuthenticationManager();
     }
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
         System.out.println("CUSTOM SECURITY CONFIG LOADED");
-        http.csrf(csrf -> csrf.disable())
+
+        http
+                .cors(Customizer.withDefaults())   // <-- ADD THIS
+                .csrf(csrf -> csrf.disable())
                 .httpBasic(Customizer.withDefaults())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
@@ -70,7 +73,6 @@ public class SecurityConfig {
                                 "/conversation/get-all-conversations"
                         )
                         .hasRole("ADMIN")
-
                         .anyRequest()
                         .authenticated()
                 )
@@ -81,17 +83,45 @@ public class SecurityConfig {
 
         return http.build();
     }
-//@Bean
-//public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+//    @Bean
+//    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+//        System.out.println("CUSTOM SECURITY CONFIG LOADED");
+//        http.csrf(csrf -> csrf.disable())
+//                .httpBasic(Customizer.withDefaults())
+//                .sessionManagement(session ->
+//                        session.sessionCreationPolicy(
+//                                SessionCreationPolicy.STATELESS
+//                        )
+//                )
+//                .exceptionHandling(exception -> exception
+//                        .authenticationEntryPoint((request, response, authException) -> {
+//                            System.out.println("401 ENTRY POINT");
+//                            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+//                        })
+//                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+//                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+//                            response.getWriter().write("Access Denied");
+//                        })
+//                )
+//                .authorizeHttpRequests(auth -> auth
+//                        .requestMatchers("/api/auth/**")
+//                        .permitAll()
+//                        .requestMatchers(
+//                                "/user/get-all-users",
+//                                "/session/get-all-sessions",
+//                                "/conversation/get-all-conversations"
+//                        )
+//                        .hasRole("ADMIN")
 //
-//    System.out.println("CUSTOM SECURITY CONFIG LOADED");
+//                        .anyRequest()
+//                        .authenticated()
+//                )
+//                .addFilterBefore(
+//                        jwtAuthenticationFilter,
+//                        UsernamePasswordAuthenticationFilter.class
+//                );
 //
-//    http
-//            .csrf(csrf -> csrf.disable())
-//            .authorizeHttpRequests(auth -> auth
-//                    .anyRequest().permitAll()
-//            );
-//
-//    return http.build();
-//}
+//        return http.build();
+//    }
+
 }
