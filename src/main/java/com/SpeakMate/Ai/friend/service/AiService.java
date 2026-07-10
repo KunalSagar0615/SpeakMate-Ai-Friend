@@ -6,7 +6,11 @@ import com.SpeakMate.Ai.friend.enumeration.SessionMode;
 
 public interface AiService {
 
-    String generateQuestion(String topic, SessionMode mode, DifficultyLevel difficultyLevel);
+    String generateQuestion(
+            String topic,
+            SessionMode mode,
+            DifficultyLevel difficultyLevel
+    );
 
     String generateFeedback(
             String question,
@@ -19,10 +23,12 @@ public interface AiService {
             SessionMode mode
     );
 
-    String generateNextQuestion(String topic, String previousQuestion,
-                                String userAnswer,
-                                SessionMode mode, DifficultyLevel difficultyLevel
+    String generateNextQuestion(
+            String topic,
+            String previousQuestions,
+            String userAnswer,
+            SessionMode mode,
+            DifficultyLevel difficultyLevel
     );
-
 
 }

@@ -22,13 +22,6 @@ import org.springframework.http.ResponseEntity;
 @Service
 public class AiServiceImpl implements AiService {
 
-//    private final GeminiConfig geminiConfig;
-//
-//    @Autowired
-//    public AiServiceImpl(GeminiConfig geminiConfig) {
-//        this.geminiConfig = geminiConfig;
-//    }
-
     private final GroqConfig groqConfig;
     private final RestTemplate restTemplate;
 
@@ -214,7 +207,7 @@ return aiQuestion;
                                 - Always refer to the actual question asked.
                                 - Do not give generic feedback such as "Good attempt" or "Needs improvement".
                                 - Be concise but informative.
-                                - Keep feedback within 3-6 sentences.
+                                - Keep feedback within maximum 3 sentences.
                                 - Return feedback only.
                 
                                 Feedback:
@@ -271,7 +264,7 @@ return aiQuestion;
                                 - If the answer is already good, say so.
                                 - Be encouraging and concise.
                                 - Do not ask a new question.
-                                - Return feedback only.
+                                - Return feedback only within maximum 3-4 lines.
                 
                                 Format:
                 
@@ -341,7 +334,7 @@ return aiQuestion;
     @Override
     public String generateNextQuestion(
             String topic,
-            String previousQuestion,
+            String previousQuestions,
             String userAnswer,
             SessionMode mode,
             DifficultyLevel difficultyLevel) {
@@ -367,26 +360,27 @@ return aiQuestion;
 
                 case INTERVIEW ->
                         String.format(
-                                "You are an interviewer. Topic: %s. Previous Question: %s. User Answer: %s. %s Ask exactly ONE relevant follow-up interview question. Return only the question. Do not provide explanations. Do not ask multiple questions.",
+                                "You are an expert technical interviewer. Topic: %s. Previously Asked Questions: %s. User's Latest Answer: %s. %s Generate exactly ONE interview question. The question MUST remain strictly within the topic '%s'. Never repeat, rephrase, or ask about concepts already covered in the previously asked questions. Explore a different subtopic, feature, comparison, best practice, use case, real-world scenario, advantage/disadvantage, or problem-solving aspect of the same topic. Prefer theoretical and conceptual questions. Occasionally ask small logic-based coding questions but avoid large coding problems. Maintain a natural interview progression from basic to advanced according to the difficulty level. Return ONLY the question text. Do not provide explanations, answers, feedback, numbering, or multiple questions.",
                                 topic,
-                                previousQuestion,
+                                previousQuestions,
                                 userAnswer,
-                                difficultyInstruction
+                                difficultyInstruction,
+                                topic
                         );
 
                 case FRIEND ->
                         String.format(
-                                "You are a friendly AI friend. Topic: %s. Previous Question: %s. User Answer: %s. Continue the conversation naturally. Ask exactly ONE friendly follow-up question. Return only the question. Do not provide explanations. Do not ask multiple questions.",
+                                "You are a friendly AI friend. Topic: %s. Previously Asked Questions: %s. User Answer: %s. Continue the conversation naturally and engagingly. Never repeat or rephrase any previously asked question. Avoid asking about the same aspect repeatedly. Explore different aspects of the topic while keeping the conversation friendly, human-like, and enjoyable. Ask exactly ONE follow-up question. Return ONLY the question text. Do not provide explanations, comments, feedback, numbering, or multiple questions.",
                                 topic,
-                                previousQuestion,
+                                previousQuestions,
                                 userAnswer
                         );
 
                 case ENGLISH_COACH ->
                         String.format(
-                                "You are an English speaking coach. Topic: %s. Previous Question: %s. User Answer: %s. Ask exactly ONE simple follow-up question. Improve speaking confidence, use easy English, keep the question under 20 words, return only the question, and do not ask multiple questions.",
+                                "You are an English speaking coach. Topic: %s. Previously Asked Questions: %s. User Answer: %s. Ask exactly ONE simple follow-up question. Never repeat or rephrase any previously asked question. Explore different aspects of the topic to improve vocabulary, fluency, confidence, and sentence formation. Use easy and natural English. Keep the question under 20 words. Return ONLY the question text. Do not provide explanations, corrections, feedback, numbering, or multiple questions.",
                                 topic,
-                                previousQuestion,
+                                previousQuestions,
                                 userAnswer
                         );
 

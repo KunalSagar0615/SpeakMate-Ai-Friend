@@ -136,11 +136,28 @@ public class ConversationServiceImpl implements ConversationService {
         Session session =
                 currentConversation.getSession();
 
+        List<Conversation> conversations =
+                conversationRepository.findBySessionId(session.getId());
+
+        List<String> questions = conversations.stream()
+                .map(Conversation::getAiQuestion)
+                .filter(question -> question != null && !question.isBlank())
+                .toList();
+
+        int start = Math.max(0, questions.size() - 15);
+
+        String previousQuestions = String.join(
+                "\n",
+                questions.subList(start, questions.size())
+        );
+
         String nextQuestion =
                 aiService.generateNextQuestion(
                         session.getTopic(),
-                        currentConversation.getAiQuestion(),
-                        requestDto.getAnswer(), session.getMode(),session.getDifficultyLevel());
+                        previousQuestions,
+                        requestDto.getAnswer(),
+                        session.getMode(),
+                        session.getDifficultyLevel());
 
         Conversation nextConversation =
                 new Conversation();
