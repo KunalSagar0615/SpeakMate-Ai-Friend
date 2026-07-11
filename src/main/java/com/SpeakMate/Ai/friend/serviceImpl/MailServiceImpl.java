@@ -20,7 +20,8 @@ public class MailServiceImpl implements MailService {
 
     @Override
     public void sendOtpEmail(String email, String otp) {
-
+        System.out.println("=== STARTING EMAIL SEND ===");
+        System.out.println("To: " + email);
         try {
 
             MimeMessage mimeMessage = mailSender.createMimeMessage();
@@ -31,9 +32,11 @@ public class MailServiceImpl implements MailService {
             helper.setSubject("SpeakMate AI Friend - Email Verification");
             helper.setText(html, true);
 
+            System.out.println("Sending OTP email...");
             mailSender.send(mimeMessage);
-
+            System.out.println("=== EMAIL SENT SUCCESSFULLY ===");
         } catch (Exception e) {
+            System.out.println("=== EMAIL FAILED ===");
             throw new RuntimeException("Failed to send OTP email", e);
         }
     }
