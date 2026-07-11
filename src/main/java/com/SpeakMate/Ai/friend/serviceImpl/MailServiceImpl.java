@@ -36,7 +36,7 @@ public class MailServiceImpl implements MailService {
             mailSender.send(mimeMessage);
             System.out.println("=== EMAIL SENT SUCCESSFULLY ===");
         } catch (Exception e) {
-            System.out.println("=== EMAIL FAILED ===");
+            System.out.println("=== EMAIL FAILED ==="+ e);
             throw new RuntimeException("Failed to send OTP email", e);
         }
     }
