@@ -31,4 +31,8 @@ public interface AiService {
             DifficultyLevel difficultyLevel
     );
 
+    String generateSuggestedAnswer(
+            String question,
+            SessionMode mode,
+            DifficultyLevel difficultyLevel);
 }

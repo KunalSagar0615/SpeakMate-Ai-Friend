@@ -3,6 +3,8 @@ package com.SpeakMate.Ai.friend.controller;
 import com.SpeakMate.Ai.friend.dto.AnswerRequestDto;
 import com.SpeakMate.Ai.friend.dto.AnswerResponseDto;
 import com.SpeakMate.Ai.friend.dto.ConversationDto;
+import com.SpeakMate.Ai.friend.dto.SuggestedAnswerRequestDto;
+import com.SpeakMate.Ai.friend.service.AiService;
 import com.SpeakMate.Ai.friend.service.ConversationService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +20,9 @@ public class ConversationController {
 
     @Autowired
     private ConversationService conversationService;
+
+    @Autowired
+    private AiService aiService;
 
     @PostMapping("/create-conversation")
     public ResponseEntity<ConversationDto> createConversation(
@@ -86,6 +91,19 @@ public class ConversationController {
 
         return ResponseEntity.ok(
                 conversationService.submitAnswer(requestDto)
+        );
+    }
+
+    @PostMapping("/suggested-answer")
+    public ResponseEntity<String> getSuggestedAnswer(
+            @RequestBody SuggestedAnswerRequestDto request) {
+
+        return ResponseEntity.ok(
+                aiService.generateSuggestedAnswer(
+                        request.getQuestion(),
+                        request.getMode(),
+                        request.getDifficultyLevel()
+                )
         );
     }
 }

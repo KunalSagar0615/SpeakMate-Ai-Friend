@@ -630,4 +630,95 @@ public SessionReportDto generateSessionReport(
         );
     }
 }
+
+    @Override
+    public String generateSuggestedAnswer(
+            String question,
+            SessionMode mode,
+            DifficultyLevel difficultyLevel) {
+
+        String prompt = String.format(
+                """
+                You are an expert tutor.
+    
+                Question:
+                %s
+    
+                Mode:
+                %s
+    
+                Difficulty:
+                %s
+    
+                Generate an ideal answer.
+    
+                Rules:
+                - Answer the question directly.
+                - Keep the answer concise.
+                - Use simple language.
+                - 3 to 8 sentences.
+                - Return only the answer.
+                """,
+                question,
+                mode,
+                difficultyLevel
+        );
+
+        return callGroq(prompt);
+    }
+
+    private String callGroq(String prompt) {
+
+        try {
+
+            String groqUrl =
+                    "https://api.groq.com/openai/v1/chat/completions";
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setBearerAuth(groqConfig.getApiKey());
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            String requestBody = """
+            {
+              "model": "llama-3.3-70b-versatile",
+              "messages": [
+                {
+                  "role": "user",
+                  "content": %s
+                }
+              ]
+            }
+            """.formatted(
+                    new ObjectMapper().writeValueAsString(prompt)
+            );
+
+            HttpEntity<String> entity =
+                    new HttpEntity<>(requestBody, headers);
+
+            ResponseEntity<String> response =
+                    restTemplate.exchange(
+                            groqUrl,
+                            HttpMethod.POST,
+                            entity,
+                            String.class
+                    );
+
+            ObjectMapper mapper = new ObjectMapper();
+
+            return mapper
+                    .readTree(response.getBody())
+                    .path("choices")
+                    .get(0)
+                    .path("message")
+                    .path("content")
+                    .asText();
+
+        } catch (Exception e) {
+
+            throw new RuntimeException(
+                    "Groq API Error: " + e.getMessage(),
+                    e
+            );
+        }
+    }
 }
