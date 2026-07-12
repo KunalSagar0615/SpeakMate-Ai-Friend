@@ -189,7 +189,7 @@ return aiQuestion;
                 case INTERVIEW ->
                         String.format(
                                 """
-                                You are an expert technical interviewer.
+                                You are an interviewer.
                 
                                 Question:
                                 %s
@@ -197,47 +197,33 @@ return aiQuestion;
                                 Candidate Answer:
                                 %s
                 
-                                Analyze the answer carefully.
+                                Evaluate the answer exactly like a real interviewer.
                 
                                 Rules:
-                                - Determine whether the answer is correct, partially correct, or incorrect.
-                                - If correct, explain briefly why it is correct.
-                                - If partially correct, explain what is correct and what is missing.
-                                - If incorrect, explain why it is incorrect and provide the correct answer.
-                                - Always refer to the actual question asked.
-                                - Do not give generic feedback such as "Good attempt" or "Needs improvement".
-                                - Be concise but informative.
-                                - Keep feedback within maximum 3 sentences.
+                                - First determine the verdict: Correct, Partially Correct, or Incorrect.
+                                - Mention specifically what the candidate answered correctly.
+                                - Mention specific missing or incorrect points.
+                                - Provide the correct explanation when needed.
+                                - Focus only on concepts related to the question.
+                                - Do not praise unnecessarily.
+                                - Do not use generic phrases such as "Good attempt", "Needs improvement", or "Could be more comprehensive".
+                                - If the answer is completely wrong, teach the concept briefly.
+                                - Keep feedback concise (80-120 words).
+                                - Do not ask a new question.
                                 - Return feedback only.
                 
-                                Feedback:
-                                """,
-                                question,
-                                answer
-                        );
-
-                case FRIEND ->
-                        String.format(
-                                """
-                                You are a friendly AI companion.
+                                Format:
                 
-                                Question:
-                                %s
+                                Verdict: <Correct/Partially Correct/Incorrect>
                 
-                                User Response:
-                                %s
+                                What You Got Right:
+                                ...
                 
-                                Respond naturally like a supportive friend.
+                                What Was Missing:
+                                ...
                 
-                                Rules:
-                                - Acknowledge the user's response.
-                                - React naturally to what the user said.
-                                - Do not judge, score, or evaluate.
-                                - Keep the response warm and conversational.
-                                - Keep it under 3 sentences.
-                                - Return feedback only.
-                
-                                Feedback:
+                                Correct Explanation:
+                                ...
                                 """,
                                 question,
                                 answer
@@ -254,17 +240,17 @@ return aiQuestion;
                                 User Answer:
                                 %s
                 
-                                Analyze the answer.
+                                Analyze the answer carefully.
                 
                                 Rules:
-                                - If grammar mistakes exist, show the corrected sentence.
-                                - Explain grammar mistakes briefly.
-                                - Suggest better vocabulary only if necessary.
-                                - Provide a more natural English version.
-                                - If the answer is already good, say so.
-                                - Be encouraging and concise.
-                                - Do not ask a new question.
-                                - Return feedback only within maximum 3-4 lines.
+                                - Correct grammar mistakes if present.
+                                - Explain mistakes briefly.
+                                - Suggest better vocabulary only when necessary.
+                                - If the answer is already natural and correct, clearly say so.
+                                - Do not invent mistakes.
+                                - Do not ask another question.
+                                - Keep feedback concise.
+                                - Return feedback only.
                 
                                 Format:
                 
@@ -276,6 +262,31 @@ return aiQuestion;
                 
                                 Natural Version:
                                 ...
+                                """,
+                                question,
+                                answer
+                        );
+
+                case FRIEND ->
+                        String.format(
+                                """
+                                You are a friendly AI companion.
+                
+                                Question:
+                                %s
+                
+                                User Response:
+                                %s
+                
+                                Rules:
+                                - Respond naturally to what the user said.
+                                - Continue the conversation like a real friend.
+                                - Show empathy when appropriate.
+                                - Do not evaluate, score, or correct the answer.
+                                - Avoid repetitive phrases.
+                                - Keep the response conversational and engaging.
+                                - Maximum 2-3 sentences.
+                                - Return only the response.
                                 """,
                                 question,
                                 answer
