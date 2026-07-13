@@ -50,9 +50,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .httpBasic(Customizer.withDefaults())
                 .sessionManagement(session ->
-                        session.sessionCreationPolicy(
-                                SessionCreationPolicy.STATELESS
-                        )
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authException) -> {
@@ -65,16 +63,11 @@ public class SecurityConfig {
                         })
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**")
-                        .permitAll()
-                        .requestMatchers(
-                                "/user/get-all-users",
-                                "/session/get-all-sessions",
-                                "/conversation/get-all-conversations"
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/user/get-all-users", "/session/get-all-sessions", "/conversation/get-all-conversations"
                         )
-                        .hasRole("ADMIN")
-                        .anyRequest()
-                        .authenticated()
+                        .hasRole("ADMIN").anyRequest().authenticated()
                 )
                 .addFilterBefore(
                         jwtAuthenticationFilter,
