@@ -1,17 +1,13 @@
 package com.SpeakMate.Ai.friend.serviceImpl;
 
-import com.SpeakMate.Ai.friend.config.GeminiConfig;
 import com.SpeakMate.Ai.friend.config.GroqConfig;
 import com.SpeakMate.Ai.friend.dto.SessionReportDto;
 import com.SpeakMate.Ai.friend.enumeration.DifficultyLevel;
 import com.SpeakMate.Ai.friend.enumeration.SessionMode;
 import com.SpeakMate.Ai.friend.service.AiService;
-import com.google.genai.Client;
-import com.google.genai.types.GenerateContentResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -62,9 +58,6 @@ public class AiServiceImpl implements AiService {
                                 "Ask questions appropriate to the user's level.";
             }
 
-            Client client = Client.builder()
-                    .apiKey(groqConfig.getApiKey())
-                    .build();
 
             String prompt;
 
