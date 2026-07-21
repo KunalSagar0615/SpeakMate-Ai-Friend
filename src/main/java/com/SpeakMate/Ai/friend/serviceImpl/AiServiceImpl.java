@@ -179,48 +179,6 @@ return aiQuestion;
 
             String prompt = switch (mode) {
 
-//                case INTERVIEW ->
-//                        String.format(
-//                                """
-//                                You are an interviewer.
-//
-//                                Question:
-//                                %s
-//
-//                                Candidate Answer:
-//                                %s
-//
-//                                Evaluate the answer exactly like a real interviewer.
-//
-//                                Rules:
-//                                - First determine the verdict: Correct, Partially Correct, or Incorrect.
-//                                - Mention specifically what the candidate answered correctly.
-//                                - Mention specific missing or incorrect points.
-//                                - Provide the correct explanation when needed.
-//                                - Focus only on concepts related to the question.
-//                                - Do not praise unnecessarily.
-//                                - Do not use generic phrases such as "Good attempt", "Needs improvement", or "Could be more comprehensive".
-//                                - If the answer is completely wrong, teach the concept briefly.
-//                                - Keep feedback concise (80-120 words).
-//                                - Do not ask a new question.
-//                                - Return feedback only.
-//
-//                                Format:
-//
-//                                Verdict: <Correct/Partially Correct/Incorrect>
-//
-//                                What You Got Right:
-//                                ...
-//
-//                                What Was Missing:
-//                                ...
-//
-//                                Correct Explanation:
-//                                ...
-//                                """,
-//                                question,
-//                                answer
-//                        );
                 case INTERVIEW ->
                         String.format(
                                 """
@@ -266,28 +224,22 @@ return aiQuestion;
                                 User Answer:
                                 %s
                 
-                                Analyze the answer carefully.
+                                Analyze the answer.
                 
                                 Rules:
-                                - Correct grammar mistakes if present.
-                                - Explain mistakes briefly.
-                                - Suggest better vocabulary only when necessary.
-                                - If the answer is already natural and correct, clearly say so.
-                                - Do not invent mistakes.
+                                - If the user says they don't know, or gives no real attempt, or the answer is empty/off-topic: respond with "Your answer is incorrect. Correct answer: <a short, natural example answer to the question in English>."
+                                - Otherwise check BOTH: (1) grammar correctness, and (2) whether the answer actually makes sense / answers the question (concept).
+                                - If grammar is correct and the content makes sense, say so briefly and move on — do not invent mistakes.
+                                - If there are grammar issues, correct them.
+                                - If the content doesn't really answer the question or is unclear, point that out briefly too.
+                                - Keep the entire feedback short — 2-3 sentences total, no long breakdowns.
                                 - Do not ask another question.
-                                - Keep feedback concise.
                                 - Return feedback only.
                 
                                 Format:
                 
-                                Corrected Sentence:
-                                ...
-                
-                                Grammar Feedback:
-                                ...
-                
-                                Natural Version:
-                                ...
+                                Corrected Sentence: <only if grammar needed correcting, else write "None needed">
+                                Feedback: <short note covering grammar + whether the answer made sense, 1-2 sentences>
                                 """,
                                 question,
                                 answer
@@ -304,26 +256,20 @@ return aiQuestion;
                                 User Response:
                                 %s
                 
-                                Your task is to react to the user's response like a caring friend.
+                                React to the user's response like a caring friend.
                 
                                 Rules:
-                                - Respond in a warm, natural, and human-like manner.
-                                - Show empathy, understanding, and emotional support when appropriate.
+                                - If the user says they don't know or gives no real answer: gently and briefly tell them the concept/answer in a friendly tone, without sounding like a teacher.
+                                - If they did answer: react warmly and naturally to what they said, and lightly touch on whether the core idea/concept in their answer makes sense — don't grade it formally.
                                 - Do NOT ask any question.
-                                - Do NOT generate follow-up questions.
-                                - Do NOT continue the conversation.
-                                - Do NOT end with a question mark.
-                                - Do NOT evaluate, score, or judge the user.
-                                - Keep the response between 2 and 4 short sentences.
-                                - Avoid generic responses.
-                                - Focus only on the user's latest response.
+                                - Do NOT continue the conversation or end with a question mark.
+                                - Do NOT use words like "grammar", "incorrect", "wrong", or "error".
+                                - Keep the response to 2-3 short sentences.
                 
                                 English Improvement Rules:
-                                - If the user's response is understandable and mostly correct, do not provide corrections.
-                                - If the user's response contains major grammar mistakes, broken sentence structure, or is more than 50%% incorrect, provide a better natural version.
-                                - Do NOT explain grammar rules.
-                                - Do NOT mention words like "grammar mistake", "incorrect", "wrong", or "error".
-                                - Simply provide a natural version.
+                                - If the response is understandable and mostly correct grammatically, do not correct it.
+                                - If there are major grammar mistakes or broken structure (more than 50%% incorrect), include a natural version.
+                                - Do NOT explain grammar rules — just show the natural version.
                 
                                 Output Format:
                 
@@ -436,18 +382,21 @@ return aiQuestion;
                 
                                 Rules:
                                 - Ask EXACTLY ONE interview question.
-                                - The question MUST remain strictly within the topic "%s".
+                                - The question must remain strictly within the topic "%s" — do not assume any specific field, language, or domain unless the topic itself specifies it.
                                 - NEVER repeat, rephrase, or slightly modify any previously asked question.
                                 - NEVER test the same concept again unless absolutely necessary.
                                 - Choose a different concept or subtopic whenever possible.
                                 - Cover the topic progressively from fundamentals to advanced concepts.
                                 - Use the candidate's latest answer to guide difficulty: if it showed a weak or incorrect understanding, ask a slightly simpler or clarifying question on a related concept; if it showed strong understanding, escalate to a harder or deeper question.
+                                - The question must be fully answerable by speaking — never ask the user to write code, write formulas, draw a diagram, or produce written output.
+                                - Around 80%% conceptual/theoretical questions and 20%% applied/scenario-based questions (explained verbally).
                                 - Prefer theoretical and conceptual questions.
-                                - Small logic-based coding questions are allowed occasionally.
-                                - Do NOT ask full coding problems.
+                                - Small logic-based or scenario-based questions are allowed occasionally, but only in a form the user can explain verbally.
                                 - Do NOT ask multiple questions.
                                 - Do NOT provide explanations, hints, answers, numbering, or markdown.
                                 - Return ONLY the question text.
+                                - Questions should match the difficulty level.
+                                - Do not provide explanations, hints, answers, or markdown.
                                 """,
                                 topic,
                                 previousQuestions,
@@ -458,7 +407,30 @@ return aiQuestion;
 
                 case FRIEND ->
                         String.format(
-                                "You are a friendly AI friend. Topic: %s. Previously Asked Questions: %s. User Answer: %s. Continue the conversation naturally and engagingly. Never repeat or rephrase any previously asked question. Avoid asking about the same aspect repeatedly. Explore different aspects of the topic while keeping the conversation friendly, human-like, and enjoyable. Ask exactly ONE follow-up question. Return ONLY the question text. Do not provide explanations, comments, feedback, numbering, or multiple questions.",
+                                """
+                                You are a friendly AI friend having a natural conversation.
+                
+                                Topic:
+                                %s
+                
+                                Previously Asked Questions:
+                                %s
+                
+                                User's Last Answer:
+                                %s
+                
+                                Your task is to continue the conversation naturally.
+                
+                                Rules:
+                                - Ask EXACTLY ONE follow-up question.
+                                - NEVER repeat or rephrase any previously asked question.
+                                - NEVER ask about the same aspect of the topic again.
+                                - Use the user's last answer to pick a natural next direction — react to what they actually said and steer toward a related but new aspect of the topic, the way a real friend would in conversation.
+                                - Explore different aspects of the topic to keep things engaging.
+                                - Sound casual, warm, and human — not like a survey.
+                                - Return ONLY the question text.
+                                - Do not provide explanations, comments, feedback, numbering, or multiple questions.
+                                """,
                                 topic,
                                 previousQuestions,
                                 userAnswer
@@ -466,7 +438,30 @@ return aiQuestion;
 
                 case ENGLISH_COACH ->
                         String.format(
-                                "You are an English speaking coach. Topic: %s. Previously Asked Questions: %s. User Answer: %s. Ask exactly ONE simple follow-up question. Never repeat or rephrase any previously asked question. Explore different aspects of the topic to improve vocabulary, fluency, confidence, and sentence formation. Use easy and natural English. Keep the question under 20 words. Return ONLY the question text. Do not provide explanations, corrections, feedback, numbering, or multiple questions.",
+                                """
+                                You are an English speaking coach.
+                
+                                Topic:
+                                %s
+                
+                                Previously Asked Questions:
+                                %s
+                
+                                User's Last Answer:
+                                %s
+                
+                                Your task is to ask the next practice question.
+                
+                                Rules:
+                                - Ask EXACTLY ONE simple follow-up question.
+                                - NEVER repeat or rephrase any previously asked question.
+                                - Explore a different aspect of the topic to build vocabulary, fluency, confidence, and sentence formation.
+                                - Use the user's last answer to judge their comfort level: if their answer was short, broken, or hesitant, keep the next question simple and easy to answer; if their answer was fluent and confident, ask something slightly more expressive or descriptive.
+                                - Use easy and natural English.
+                                - Keep the question under 20 words.
+                                - Return ONLY the question text.
+                                - Do not provide explanations, corrections, feedback, numbering, or multiple questions.
+                                """,
                                 topic,
                                 previousQuestions,
                                 userAnswer
