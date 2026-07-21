@@ -179,10 +179,52 @@ return aiQuestion;
 
             String prompt = switch (mode) {
 
+//                case INTERVIEW ->
+//                        String.format(
+//                                """
+//                                You are an interviewer.
+//
+//                                Question:
+//                                %s
+//
+//                                Candidate Answer:
+//                                %s
+//
+//                                Evaluate the answer exactly like a real interviewer.
+//
+//                                Rules:
+//                                - First determine the verdict: Correct, Partially Correct, or Incorrect.
+//                                - Mention specifically what the candidate answered correctly.
+//                                - Mention specific missing or incorrect points.
+//                                - Provide the correct explanation when needed.
+//                                - Focus only on concepts related to the question.
+//                                - Do not praise unnecessarily.
+//                                - Do not use generic phrases such as "Good attempt", "Needs improvement", or "Could be more comprehensive".
+//                                - If the answer is completely wrong, teach the concept briefly.
+//                                - Keep feedback concise (80-120 words).
+//                                - Do not ask a new question.
+//                                - Return feedback only.
+//
+//                                Format:
+//
+//                                Verdict: <Correct/Partially Correct/Incorrect>
+//
+//                                What You Got Right:
+//                                ...
+//
+//                                What Was Missing:
+//                                ...
+//
+//                                Correct Explanation:
+//                                ...
+//                                """,
+//                                question,
+//                                answer
+//                        );
                 case INTERVIEW ->
                         String.format(
                                 """
-                                You are an interviewer.
+                                You are a technical interviewer.
                 
                                 Question:
                                 %s
@@ -190,33 +232,24 @@ return aiQuestion;
                                 Candidate Answer:
                                 %s
                 
-                                Evaluate the answer exactly like a real interviewer.
+                                Evaluate the answer.
                 
                                 Rules:
-                                - First determine the verdict: Correct, Partially Correct, or Incorrect.
-                                - Mention specifically what the candidate answered correctly.
-                                - Mention specific missing or incorrect points.
-                                - Provide the correct explanation when needed.
-                                - Focus only on concepts related to the question.
-                                - Do not praise unnecessarily.
-                                - Do not use generic phrases such as "Good attempt", "Needs improvement", or "Could be more comprehensive".
-                                - If the answer is completely wrong, teach the concept briefly.
-                                - Keep feedback concise (80-120 words).
+                                - If the candidate says they don't know, or asks you to tell them the answer, or gives no real attempt: respond with "Your answer is incorrect. Correct answer: <brief correct concept explanation in 2-3 sentences>."
+                                - Otherwise, first give a one-word verdict: Correct, Partially Correct, or Incorrect.
+                                - Focus mainly on whether the core CONCEPT is correct. Only briefly touch on how it was worded/answered.
+                                - If Correct: confirm briefly and add one extra detail or edge case if useful (1-2 sentences total).
+                                - If Partially Correct or Incorrect: state what concept is missing or wrong, then give the correct concept briefly.
+                                - Do not use generic phrases like "Good attempt" or "Needs improvement".
+                                - Do not repeat the full question or answer back.
+                                - Keep total feedback to 2-4 sentences maximum. Be direct and concise.
                                 - Do not ask a new question.
                                 - Return feedback only.
                 
                                 Format:
                 
                                 Verdict: <Correct/Partially Correct/Incorrect>
-                
-                                What You Got Right:
-                                ...
-                
-                                What Was Missing:
-                                ...
-                
-                                Correct Explanation:
-                                ...
+                                Feedback: <short, concept-focused feedback>
                                 """,
                                 question,
                                 answer
@@ -384,7 +417,38 @@ return aiQuestion;
 
                 case INTERVIEW ->
                         String.format(
-                                "You are an expert technical interviewer. Topic: %s. Previously Asked Questions: %s. User's Latest Answer: %s. %s Generate exactly ONE interview question. The question MUST remain strictly within the topic '%s'. Never repeat, rephrase, or ask about concepts already covered in the previously asked questions. Explore a different subtopic, feature, comparison, best practice, use case, real-world scenario, advantage/disadvantage, or problem-solving aspect of the same topic. Prefer theoretical and conceptual questions. Occasionally ask small logic-based coding questions but avoid large coding problems. Maintain a natural interview progression from basic to advanced according to the difficulty level. Return ONLY the question text. Do not provide explanations, answers, feedback, numbering, or multiple questions.",
+                                """
+                                You are an expert technical interviewer.
+                
+                                Topic:
+                                %s
+                
+                                Previously Asked Questions (latest 20 from the same topic, mode, and difficulty):
+                                %s
+                
+                                Candidate's Latest Answer:
+                                %s
+                
+                                Difficulty Guidance:
+                                %s
+                
+                                Your task is to generate the next interview question.
+                
+                                Rules:
+                                - Ask EXACTLY ONE interview question.
+                                - The question MUST remain strictly within the topic "%s".
+                                - NEVER repeat, rephrase, or slightly modify any previously asked question.
+                                - NEVER test the same concept again unless absolutely necessary.
+                                - Choose a different concept or subtopic whenever possible.
+                                - Cover the topic progressively from fundamentals to advanced concepts.
+                                - Use the candidate's latest answer to guide difficulty: if it showed a weak or incorrect understanding, ask a slightly simpler or clarifying question on a related concept; if it showed strong understanding, escalate to a harder or deeper question.
+                                - Prefer theoretical and conceptual questions.
+                                - Small logic-based coding questions are allowed occasionally.
+                                - Do NOT ask full coding problems.
+                                - Do NOT ask multiple questions.
+                                - Do NOT provide explanations, hints, answers, numbering, or markdown.
+                                - Return ONLY the question text.
+                                """,
                                 topic,
                                 previousQuestions,
                                 userAnswer,
