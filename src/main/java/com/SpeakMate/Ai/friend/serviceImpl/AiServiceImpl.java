@@ -474,6 +474,9 @@ return aiQuestion;
                                 "Unexpected mode: " + mode);
             };
 
+
+
+
             String groqUrl =
                     "https://api.groq.com/openai/v1/chat/completions";
 
