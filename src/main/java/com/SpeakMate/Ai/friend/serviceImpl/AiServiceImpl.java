@@ -64,7 +64,7 @@ public class AiServiceImpl implements AiService {
             switch (mode) {
 
                 case INTERVIEW ->
-                prompt = """
+                        prompt = """
         You are a technical interviewer.
 
         Topic: %s
@@ -73,15 +73,19 @@ public class AiServiceImpl implements AiService {
 
         Rules:
         - Ask exactly ONE interview question.
-        - Focus primarily on theoretical concepts, fundamentals, OOP, Java, Spring Boot, DBMS, SQL, System Design, and practical understanding.
-        - Do NOT ask full coding problems.
-        - Small coding logic questions are allowed occasionally.
-        - Around 80%% theoretical questions and 20%% simple coding logic questions.
+        - The question must be strictly relevant to the given topic "%s" — do not assume any specific field, language, or domain unless the topic itself specifies it.
+        - Focus primarily on core concepts, fundamentals, and practical understanding within that topic.
+        - Do NOT ask full coding/practical problems that require writing something down.
+        - Small logic-based or scenario-based questions are allowed occasionally, but only in a form the user can explain verbally.
+        - The question must be fully answerable by speaking — never ask the user to write code, write formulas, draw a diagram, or produce written output.
+        - Around 80%% conceptual/theoretical questions and 20%% applied/scenario-based questions (explained verbally).
+        - Ask the question directly — do NOT add any reflective or empathetic preamble.
+        - Keep the question under 30 words, single sentence.
         - Questions should match the difficulty level.
         - Return only the question.
         - Do not provide explanations, hints, answers, or markdown.
         """
-                        .formatted(topic, difficultyInstruction);
+                                .formatted(topic, difficultyInstruction, topic);
 
                 case FRIEND ->
                         prompt = """
@@ -94,6 +98,7 @@ public class AiServiceImpl implements AiService {
                     Rules:
                     - Ask only ONE friendly question.
                     - Sound casual and human.
+                    - Keep it under 20 words, single sentence, no compound double-clause questions.
                     - Return only the question.
                     """
                                 .formatted(topic);
@@ -109,6 +114,7 @@ public class AiServiceImpl implements AiService {
                     Rules:
                     - Ask only ONE question.
                     - Encourage the user to answer in English.
+                    - Keep it under 20 words.
                     - Return only the question.
                     """
                                 .formatted(topic);
@@ -152,19 +158,19 @@ public class AiServiceImpl implements AiService {
 
             ObjectMapper mapper = new ObjectMapper();
 
-String aiQuestion = mapper
-        .readTree(response.getBody())
-        .path("choices")
-        .get(0)
-        .path("message")
-        .path("content")
-        .asText();
+            String aiQuestion = mapper
+                    .readTree(response.getBody())
+                    .path("choices")
+                    .get(0)
+                    .path("message")
+                    .path("content")
+                    .asText();
 
-return aiQuestion;
+            return aiQuestion;
 
         } catch (Exception e) {
-                throw new RuntimeException(
-                        "Groq API Error: " + e.getMessage(), e);
+            throw new RuntimeException(
+                    "Groq API Error: " + e.getMessage(), e);
 
         }
     }
@@ -193,7 +199,9 @@ return aiQuestion;
                                 Evaluate the answer.
                 
                                 Rules:
-                                - If the candidate says they don't know, asks you to tell them the answer, or gives no real attempt: respond with "Your answer is incorrect. Correct answer: <brief correct concept explanation>."
+                                - If the candidate explicitly asks to skip or change the topic/question (not confusion, a deliberate request): reply only with a brief 5-12 word acknowledgment like "No problem, let's move to a different question." Do not evaluate anything.
+                                - If the candidate indicates confusion or says they didn't understand the question (not the same as not knowing the answer): reply only with a brief 5-15 word acknowledgment like "No worries, let me put that more simply." Do NOT restate or re-explain the question content yourself.
+                                - If the candidate says they don't know the answer, asks you to tell them the answer, or gives no real attempt: respond with "Your answer is incorrect. Correct answer: <brief correct concept explanation>."
                                 - Otherwise, first give a one-word verdict: Correct, Partially Correct, or Incorrect.
                                 - Focus mainly on whether the core CONCEPT is correct. Only briefly touch on how it was worded.
                                 - If Correct: confirm briefly and add one extra detail or edge case only if useful.
@@ -227,6 +235,8 @@ return aiQuestion;
                                 Analyze the answer.
                 
                                 Rules:
+                                - If the user explicitly asks to skip or change the topic/question: reply only with a brief 5-12 word acknowledgment like "Sure, let's try something else." Do not evaluate anything.
+                                - If the user indicates confusion or says they didn't understand the question: reply only with a brief 5-15 word acknowledgment like "No worries, let me simplify that." Do NOT restate the question yourself.
                                 - If the user says they don't know, gives no real attempt, or the answer is empty/off-topic: respond with "Your answer is incorrect. Correct answer: <a short, natural example answer in English>."
                                 - Otherwise check BOTH: (1) grammar correctness, and (2) whether the answer actually makes sense / answers the question.
                                 - If grammar is correct and content makes sense, say so briefly — do not invent mistakes.
@@ -260,10 +270,11 @@ return aiQuestion;
                                 Your task is to react briefly to the user's response.
                 
                                 Rules:
-                                - If the user says they didn't understand the question, seems confused, or asks you to explain/repeat it: briefly rephrase or simplify the original question in plain, easy words instead of reacting like it was an answer.
+                                - If the user explicitly asks to skip, change the topic, or move to something else: reply only with a brief 5-12 word acknowledgment like "Sure, let's talk about something else." Nothing more.
+                                - If the user says they didn't understand the question, seems confused, or asks you to explain/repeat it: reply only with a brief 5-15 word acknowledgment like "No worries, let me simplify that for you." Do NOT restate or answer the question yourself — a simpler version of the question will be asked separately.
                                 - If the user says they don't know or gives no real attempt: gently tell them the concept/answer in a friendly tone, without sounding like a teacher.
                                 - Otherwise, react naturally and specifically to what they said.
-                                - Respond in 15 to 40 words total. Do not exceed 40 words.
+                                - Respond in 15 to 40 words total. Do not exceed 40 words (except the short acknowledgments above, which must stay under 15 words).
                                 - Do NOT ask any question.
                                 - Do NOT end with a question mark.
                                 - Do NOT evaluate, score, or judge the user.
@@ -368,7 +379,7 @@ return aiQuestion;
                                 Topic:
                                 %s
     
-                                Previously Asked Questions (latest 20 from the same topic, mode, and difficulty):
+                                Previously Asked Questions (latest 20 from the same topic, mode, and difficulty — this list is authoritative; the last item in it IS the question that was just asked):
                                 %s
     
                                 Candidate's Latest Answer:
@@ -380,17 +391,20 @@ return aiQuestion;
                                 Your task is to generate the next interview question.
     
                                 Rules:
-                                - If the candidate's latest answer indicates confusion (e.g. "I didn't get your question", "I don't understand", "can you repeat"), do NOT ask a new question — instead return a simpler, clearer rephrasing of the previous question.
+                                - If the candidate's latest answer explicitly asks to skip or change the topic/question: pick a genuinely new concept or subtopic within "%s" that is unrelated to the recent question thread, and ask that as a fresh question.
+                                - If the candidate's latest answer indicates confusion (e.g. "I didn't get your question", "I don't understand", "can you repeat", "explain simply"): take the LAST question from Previously Asked Questions and return a simpler, shorter rewording of that exact same question. Never claim no previous question exists — the list always contains one.
                                 - Otherwise, ask EXACTLY ONE interview question.
                                 - The question must remain strictly within the topic "%s" — do not assume any specific field, language, or domain unless the topic itself specifies it.
                                 - NEVER repeat, rephrase, or slightly modify any previously asked question.
                                 - NEVER test the same concept again unless absolutely necessary.
-                                - Choose a different concept or subtopic whenever possible.
+                                - Avoid circling back to the same theme or subtopic across multiple questions in a row — after covering a theme once, move to a genuinely different concept.
                                 - Cover the topic progressively from fundamentals to advanced concepts.
                                 - Use the candidate's latest answer to guide difficulty: if it showed a weak or incorrect understanding, ask a slightly simpler or clarifying question on a related concept; if it showed strong understanding, escalate to a harder or deeper question.
                                 - The question must be fully answerable by speaking — never ask the user to write code, write formulas, draw a diagram, or produce written output.
                                 - Around 80%% conceptual/theoretical questions and 20%% applied/scenario-based questions (explained verbally).
                                 - Small logic-based or scenario-based questions are allowed occasionally, but only in a form the user can explain verbally.
+                                - Ask the question directly — do NOT add a reflective/empathetic preamble commenting on the previous answer (e.g. no "That's interesting" or "Great point" before the question).
+                                - Keep the question under 30 words, single sentence, no compound double-clause questions.
                                 - Questions should match the difficulty level.
                                 - Do NOT ask multiple questions.
                                 - Do NOT provide explanations, hints, answers, numbering, or markdown.
@@ -400,6 +414,7 @@ return aiQuestion;
                                 previousQuestions,
                                 userAnswer,
                                 difficultyInstruction,
+                                topic,
                                 topic
                         );
 
@@ -411,7 +426,7 @@ return aiQuestion;
                                 Topic:
                                 %s
     
-                                Previously Asked Questions:
+                                Previously Asked Questions (this list is authoritative; the last item in it IS the question that was just asked):
                                 %s
     
                                 User's Last Answer:
@@ -420,13 +435,15 @@ return aiQuestion;
                                 Your task is to continue the conversation naturally.
     
                                 Rules:
-                                - If the user's last answer indicates confusion (e.g. "I didn't get your question", "I don't understand", "can you repeat"), do NOT ask a new question — instead return a simpler, clearer rephrasing of the previous question in a casual tone.
+                                - If the user's last answer explicitly asks to skip, change the topic, or talk about something else: pick a genuinely new, unrelated topic direction and ask a fresh question about it.
+                                - If the user's last answer indicates confusion (e.g. "I didn't get your question", "I don't understand", "can you repeat", "explain simply"): take the LAST question from Previously Asked Questions and return a simpler, shorter rewording of that exact same question in a casual tone. Never claim no previous question exists — the list always contains one.
                                 - Otherwise, ask EXACTLY ONE follow-up question.
                                 - NEVER repeat or rephrase any previously asked question.
-                                - NEVER ask about the same aspect of the topic again.
+                                - Avoid circling back to the same theme or subtopic repeatedly (e.g. exercise, daily routine, obstacles) — after 1-2 questions on a theme, move to a genuinely different one.
                                 - Vary the question's structure/phrasing style — avoid repeatedly using the same sentence template (e.g. "How do you think X influences Y?") across consecutive questions.
                                 - Use the user's last answer to pick a natural next direction — react to what they actually said and steer toward a related but new aspect of the topic, the way a real friend would in conversation.
-                                - Explore different aspects of the topic to keep things engaging.
+                                - Ask the question directly — do NOT prefix it with a reflective/empathetic comment on the previous answer (e.g. no "That's really impressive that..." or "That's a really powerful image..." before the question).
+                                - Keep the question under 20 words, single sentence, no compound double-clause questions.
                                 - Sound casual, warm, and human — not like a survey.
                                 - Return ONLY the question text.
                                 - Do not provide explanations, comments, feedback, numbering, or multiple questions.
@@ -444,7 +461,7 @@ return aiQuestion;
                                 Topic:
                                 %s
     
-                                Previously Asked Questions:
+                                Previously Asked Questions (this list is authoritative; the last item in it IS the question that was just asked):
                                 %s
     
                                 User's Last Answer:
@@ -453,12 +470,15 @@ return aiQuestion;
                                 Your task is to ask the next practice question.
     
                                 Rules:
-                                - If the user's last answer indicates confusion (e.g. "I didn't get your question", "I don't understand", "can you repeat"), do NOT ask a new question — instead return a simpler, clearer rephrasing of the previous question.
+                                - If the user's last answer explicitly asks to skip or change the topic: pick a genuinely new, unrelated topic direction and ask a fresh simple question about it.
+                                - If the user's last answer indicates confusion (e.g. "I didn't get your question", "I don't understand", "can you repeat"): take the LAST question from Previously Asked Questions and return a simpler, shorter rewording of that exact same question. Never claim no previous question exists — the list always contains one.
                                 - Otherwise, ask EXACTLY ONE simple follow-up question.
                                 - NEVER repeat or rephrase any previously asked question.
+                                - Avoid circling back to the same theme repeatedly — after 1-2 questions on a theme, move to a genuinely different one.
                                 - Vary the question's structure/phrasing style — avoid repeatedly using the same sentence template across consecutive questions.
                                 - Explore a different aspect of the topic to build vocabulary, fluency, confidence, and sentence formation.
                                 - Use the user's last answer to judge their comfort level: if their answer was short, broken, or hesitant, keep the next question simple and easy to answer; if their answer was fluent and confident, ask something slightly more expressive or descriptive.
+                                - Ask the question directly — do NOT add a reflective preamble before it.
                                 - Use easy and natural English.
                                 - Keep the question under 20 words.
                                 - Return ONLY the question text.
@@ -528,122 +548,122 @@ return aiQuestion;
         }
     }
 
-//
-@Override
-public SessionReportDto generateSessionReport(
-        String conversationHistory,
-        SessionMode mode) {
+    //
+    @Override
+    public SessionReportDto generateSessionReport(
+            String conversationHistory,
+            SessionMode mode) {
 
-    try {
+        try {
 
-        String prompt = switch (mode) {
+            String prompt = switch (mode) {
 
-            case INTERVIEW ->
-                    String.format(
-                            """
-                            You are an expert technical interviewer.
+                case INTERVIEW ->
+                        String.format(
+                                """
+                                You are an expert technical interviewer.
+    
+                                Analyze the following interview conversation.
+    
+                                %s
+    
+                                Return ONLY valid JSON in this exact format:
+    
+                                {
+                                  "overallEvaluation":"...",
+                                  "strengths":"...",
+                                  "areasOfImprovement":"...",
+                                  "recommendations":"..."
+                                }
+    
+                                Rules:
+                                - Return valid JSON only.
+                                - Do not use markdown.
+                                - Do not use code blocks.
+                                - Do not return arrays.
+                                - strengths must be a single string.
+                                - areasOfImprovement must be a single string.
+                                - recommendations must be a single string.
+                                - No extra text before or after JSON.
+                                """,
+                                conversationHistory
+                        );
 
-                            Analyze the following interview conversation.
+                case FRIEND ->
+                        String.format(
+                                """
+                                You are a conversation analyst.
+    
+                                Analyze the following conversation.
+    
+                                %s
+    
+                                Return ONLY valid JSON in this exact format:
+    
+                                {
+                                  "overallEvaluation":"...",
+                                  "strengths":"...",
+                                  "areasOfImprovement":"...",
+                                  "recommendations":"..."
+                                }
+    
+                                Rules:
+                                - Return valid JSON only.
+                                - Do not use markdown.
+                                - Do not use code blocks.
+                                - Do not return arrays.
+                                - strengths must be a single string.
+                                - areasOfImprovement must be a single string.
+                                - recommendations must be a single string.
+                                - No extra text before or after JSON.
+                                """,
+                                conversationHistory
+                        );
 
-                            %s
+                case ENGLISH_COACH ->
+                        String.format(
+                                """
+                                You are an English communication evaluator.
+    
+                                Analyze the following conversation.
+    
+                                %s
+    
+                                Return ONLY valid JSON in this exact format:
+    
+                                {
+                                  "overallEvaluation":"...",
+                                  "strengths":"...",
+                                  "areasOfImprovement":"...",
+                                  "recommendations":"..."
+                                }
+    
+                                Rules:
+                                - Return valid JSON only.
+                                - Do not use markdown.
+                                - Do not use code blocks.
+                                - Do not return arrays.
+                                - strengths must be a single string.
+                                - areasOfImprovement must be a single string.
+                                - recommendations must be a single string.
+                                - No extra text before or after JSON.
+                                """,
+                                conversationHistory
+                        );
 
-                            Return ONLY valid JSON in this exact format:
+                default ->
+                        throw new IllegalStateException(
+                                "Unexpected mode: " + mode);
+            };
 
-                            {
-                              "overallEvaluation":"...",
-                              "strengths":"...",
-                              "areasOfImprovement":"...",
-                              "recommendations":"..."
-                            }
+            String groqUrl =
+                    "https://api.groq.com/openai/v1/chat/completions";
 
-                            Rules:
-                            - Return valid JSON only.
-                            - Do not use markdown.
-                            - Do not use code blocks.
-                            - Do not return arrays.
-                            - strengths must be a single string.
-                            - areasOfImprovement must be a single string.
-                            - recommendations must be a single string.
-                            - No extra text before or after JSON.
-                            """,
-                            conversationHistory
-                    );
+            HttpHeaders headers = new HttpHeaders();
+            headers.setBearerAuth(groqConfig.getApiKey());
+            headers.setContentType(MediaType.APPLICATION_JSON);
 
-            case FRIEND ->
-                    String.format(
-                            """
-                            You are a conversation analyst.
-
-                            Analyze the following conversation.
-
-                            %s
-
-                            Return ONLY valid JSON in this exact format:
-
-                            {
-                              "overallEvaluation":"...",
-                              "strengths":"...",
-                              "areasOfImprovement":"...",
-                              "recommendations":"..."
-                            }
-
-                            Rules:
-                            - Return valid JSON only.
-                            - Do not use markdown.
-                            - Do not use code blocks.
-                            - Do not return arrays.
-                            - strengths must be a single string.
-                            - areasOfImprovement must be a single string.
-                            - recommendations must be a single string.
-                            - No extra text before or after JSON.
-                            """,
-                            conversationHistory
-                    );
-
-            case ENGLISH_COACH ->
-                    String.format(
-                            """
-                            You are an English communication evaluator.
-
-                            Analyze the following conversation.
-
-                            %s
-
-                            Return ONLY valid JSON in this exact format:
-
-                            {
-                              "overallEvaluation":"...",
-                              "strengths":"...",
-                              "areasOfImprovement":"...",
-                              "recommendations":"..."
-                            }
-
-                            Rules:
-                            - Return valid JSON only.
-                            - Do not use markdown.
-                            - Do not use code blocks.
-                            - Do not return arrays.
-                            - strengths must be a single string.
-                            - areasOfImprovement must be a single string.
-                            - recommendations must be a single string.
-                            - No extra text before or after JSON.
-                            """,
-                            conversationHistory
-                    );
-
-            default ->
-                    throw new IllegalStateException(
-                            "Unexpected mode: " + mode);
-        };
-
-        String groqUrl =
-                "https://api.groq.com/openai/v1/chat/completions";
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(groqConfig.getApiKey());
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        String requestBody = """
+            String requestBody = """
             {
               "model": "llama-3.3-70b-versatile",
               "messages": [
@@ -654,59 +674,59 @@ public SessionReportDto generateSessionReport(
               ]
             }
             """.formatted(
-                new ObjectMapper().writeValueAsString(prompt)
-        );
+                    new ObjectMapper().writeValueAsString(prompt)
+            );
 
-        HttpEntity<String> entity =
-                new HttpEntity<>(requestBody, headers);
+            HttpEntity<String> entity =
+                    new HttpEntity<>(requestBody, headers);
 
-        ResponseEntity<String> response =
-                restTemplate.exchange(
-                        groqUrl,
-                        HttpMethod.POST,
-                        entity,
-                        String.class
-                );
+            ResponseEntity<String> response =
+                    restTemplate.exchange(
+                            groqUrl,
+                            HttpMethod.POST,
+                            entity,
+                            String.class
+                    );
 
-        ObjectMapper objectMapper = new ObjectMapper();
+            ObjectMapper objectMapper = new ObjectMapper();
 
-        String report = objectMapper
-                .readTree(response.getBody())
-                .path("choices")
-                .get(0)
-                .path("message")
-                .path("content")
-                .asText();
+            String report = objectMapper
+                    .readTree(response.getBody())
+                    .path("choices")
+                    .get(0)
+                    .path("message")
+                    .path("content")
+                    .asText();
 
-        System.out.println("========== GROQ REPORT ==========");
-        System.out.println(report);
-        System.out.println("================================");
+            System.out.println("========== GROQ REPORT ==========");
+            System.out.println(report);
+            System.out.println("================================");
 
-        SessionReportDto dto =
-                objectMapper.readValue(
-                        report,
-                        SessionReportDto.class
-                );
+            SessionReportDto dto =
+                    objectMapper.readValue(
+                            report,
+                            SessionReportDto.class
+                    );
 
-        System.out.println("========== PARSED DTO ==========");
-        System.out.println(dto);
-        System.out.println("================================");
+            System.out.println("========== PARSED DTO ==========");
+            System.out.println(dto);
+            System.out.println("================================");
 
-        return dto;
+            return dto;
 
-    } catch (Exception e) {
+        } catch (Exception e) {
 
-        e.printStackTrace();
+            e.printStackTrace();
 
-        return new SessionReportDto(
-                null,
-                "Unable to generate report.",
-                "N/A",
-                "N/A",
-                "N/A"
-        );
+            return new SessionReportDto(
+                    null,
+                    "Unable to generate report.",
+                    "N/A",
+                    "N/A",
+                    "N/A"
+            );
+        }
     }
-}
 
     @Override
     public String generateSuggestedAnswer(
