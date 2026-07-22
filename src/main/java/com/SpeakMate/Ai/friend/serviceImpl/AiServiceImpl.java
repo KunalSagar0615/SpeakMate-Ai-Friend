@@ -233,7 +233,7 @@ return aiQuestion;
                                 - If there are grammar issues, correct them.
                                 - If the content doesn't really answer the question or is unclear, point that out briefly too.
                                 - Do not use generic filler phrases like "That's a great point" or "It's great that".
-                                - Keep feedback between 15 and 35 words total.
+                                - Respond in 15 to 40 words total. Do not exceed 40 words.
                                 - Do not ask another question.
                                 - Return feedback only.
                 
@@ -263,7 +263,7 @@ return aiQuestion;
                                 - If the user says they didn't understand the question, seems confused, or asks you to explain/repeat it: briefly rephrase or simplify the original question in plain, easy words instead of reacting like it was an answer.
                                 - If the user says they don't know or gives no real attempt: gently tell them the concept/answer in a friendly tone, without sounding like a teacher.
                                 - Otherwise, react naturally and specifically to what they said.
-                                - Respond in 10 to 35 words total. Do not exceed 35 words.
+                                - Respond in 15 to 40 words total. Do not exceed 40 words.
                                 - Do NOT ask any question.
                                 - Do NOT end with a question mark.
                                 - Do NOT evaluate, score, or judge the user.
