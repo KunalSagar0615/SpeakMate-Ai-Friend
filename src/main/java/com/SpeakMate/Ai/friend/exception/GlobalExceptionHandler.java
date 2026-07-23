@@ -79,6 +79,30 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ApiResponse> handleUserNotFoundException(
+            UserNotFoundException ex) {
+
+        return new ResponseEntity<>(
+                new ApiResponse(ex.getMessage(), false),
+                HttpStatus.NOT_FOUND
+        );
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ApiResponse> handleInvalidCredentialsException(
+            InvalidCredentialsException ex) {
+
+        return new ResponseEntity<>(
+                new ApiResponse(ex.getMessage(), false),
+                HttpStatus.UNAUTHORIZED
+        );
+    }
+
+    // =========================================================
+    // REQUEST VALIDATION
+    // =========================================================
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse> handleValidationException(
             MethodArgumentNotValidException ex) {
@@ -96,45 +120,50 @@ public class GlobalExceptionHandler {
         );
     }
 
+    // =========================================================
+    // INVALID REQUEST DATA
+    // =========================================================
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse> handleIllegalArgumentException(
+            IllegalArgumentException ex) {
+
+        return new ResponseEntity<>(
+                new ApiResponse(ex.getMessage(), false),
+                HttpStatus.BAD_REQUEST
+        );
+    }
+
+    // =========================================================
+    // INVALID RESOURCE / SESSION STATE
+    // =========================================================
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiResponse> handleIllegalStateException(
+            IllegalStateException ex) {
+
+        return new ResponseEntity<>(
+                new ApiResponse(ex.getMessage(), false),
+                HttpStatus.CONFLICT
+        );
+    }
+
+    // =========================================================
+    // FALLBACK
+    // =========================================================
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse> handleGlobalException(
             Exception ex) {
 
         return new ResponseEntity<>(
-                new ApiResponse(ex.getMessage(), false),
+                new ApiResponse(
+                        ex.getMessage() != null
+                                ? ex.getMessage()
+                                : "An unexpected error occurred.",
+                        false
+                ),
                 HttpStatus.INTERNAL_SERVER_ERROR
-        );
-    }
-
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<ApiResponse> handleUserNotFoundException(
-            UserNotFoundException ex
-    ) {
-
-        ApiResponse response = new ApiResponse(
-                ex.getMessage(),
-                false
-        );
-
-        return new ResponseEntity<>(
-                response,
-                HttpStatus.NOT_FOUND
-        );
-    }
-
-    @ExceptionHandler(InvalidCredentialsException.class)
-    public ResponseEntity<ApiResponse> handleInvalidCredentialsException(
-            InvalidCredentialsException ex
-    ) {
-
-        ApiResponse response = new ApiResponse(
-                ex.getMessage(),
-                false
-        );
-
-        return new ResponseEntity<>(
-                response,
-                HttpStatus.UNAUTHORIZED
         );
     }
 }

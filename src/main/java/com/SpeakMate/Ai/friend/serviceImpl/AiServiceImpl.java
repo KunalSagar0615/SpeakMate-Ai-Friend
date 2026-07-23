@@ -1,19 +1,26 @@
 package com.SpeakMate.Ai.friend.serviceImpl;
 
 import com.SpeakMate.Ai.friend.config.GroqConfig;
+import com.SpeakMate.Ai.friend.dto.AiAnswerEvaluationDto;
+import com.SpeakMate.Ai.friend.dto.AiQuestionExtractionDto;
 import com.SpeakMate.Ai.friend.dto.SessionReportDto;
+import com.SpeakMate.Ai.friend.enumeration.AnswerEvaluationStatus;
 import com.SpeakMate.Ai.friend.enumeration.DifficultyLevel;
 import com.SpeakMate.Ai.friend.enumeration.SessionMode;
 import com.SpeakMate.Ai.friend.service.AiService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class AiServiceImpl implements AiService {
@@ -33,7 +40,8 @@ public class AiServiceImpl implements AiService {
     @Override
     public String generateQuestion(
             String topic,
-            SessionMode mode, DifficultyLevel difficultyLevel) {
+            SessionMode mode,
+            DifficultyLevel difficultyLevel) {
 
         try {
 
@@ -57,7 +65,6 @@ public class AiServiceImpl implements AiService {
                         difficultyInstruction =
                                 "Ask questions appropriate to the user's level.";
             }
-
 
             String prompt;
 
@@ -158,7 +165,7 @@ public class AiServiceImpl implements AiService {
 
             ObjectMapper mapper = new ObjectMapper();
 
-            String aiQuestion = mapper
+            return mapper
                     .readTree(response.getBody())
                     .path("choices")
                     .get(0)
@@ -166,12 +173,12 @@ public class AiServiceImpl implements AiService {
                     .path("content")
                     .asText();
 
-            return aiQuestion;
-
         } catch (Exception e) {
-            throw new RuntimeException(
-                    "Groq API Error: " + e.getMessage(), e);
 
+            throw new RuntimeException(
+                    "Groq API Error: " + e.getMessage(),
+                    e
+            );
         }
     }
 
@@ -189,15 +196,15 @@ public class AiServiceImpl implements AiService {
                         String.format(
                                 """
                                 You are a technical interviewer.
-                
+
                                 Question:
                                 %s
-                
+
                                 Candidate Answer:
                                 %s
-                
+
                                 Evaluate the answer.
-                
+
                                 Rules:
                                 - If the candidate explicitly asks to skip or change the topic/question (not confusion, a deliberate request): reply only with a brief 5-12 word acknowledgment like "No problem, let's move to a different question." Do not evaluate anything.
                                 - If the candidate indicates confusion or says they didn't understand the question (not the same as not knowing the answer): reply only with a brief 5-15 word acknowledgment like "No worries, let me put that more simply." Do NOT restate or re-explain the question content yourself.
@@ -211,9 +218,9 @@ public class AiServiceImpl implements AiService {
                                 - Keep feedback between 15 and 40 words total. Be direct and concise.
                                 - Do not ask a new question.
                                 - Return feedback only.
-                
+
                                 Format:
-                
+
                                 Verdict: <Correct/Partially Correct/Incorrect>
                                 Feedback: <short, concept-focused feedback>
                                 """,
@@ -225,15 +232,15 @@ public class AiServiceImpl implements AiService {
                         String.format(
                                 """
                                 You are an English speaking coach.
-                
+
                                 User Question:
                                 %s
-                
+
                                 User Answer:
                                 %s
-                
+
                                 Analyze the answer.
-                
+
                                 Rules:
                                 - If the user explicitly asks to skip or change the topic/question: reply only with a brief 5-12 word acknowledgment like "Sure, let's try something else." Do not evaluate anything.
                                 - If the user indicates confusion or says they didn't understand the question: reply only with a brief 5-15 word acknowledgment like "No worries, let me simplify that." Do NOT restate the question yourself.
@@ -246,9 +253,9 @@ public class AiServiceImpl implements AiService {
                                 - Respond in 15 to 40 words total. Do not exceed 40 words.
                                 - Do not ask another question.
                                 - Return feedback only.
-                
+
                                 Format:
-                
+
                                 Corrected Sentence: <only if grammar needed correcting, else write "None needed">
                                 Feedback: <short note covering grammar + whether the answer made sense>
                                 """,
@@ -260,15 +267,15 @@ public class AiServiceImpl implements AiService {
                         String.format(
                                 """
                                 You are a supportive AI friend having a natural conversation.
-                
+
                                 Question:
                                 %s
-                
+
                                 User Response:
                                 %s
-                
+
                                 Your task is to react briefly to the user's response.
-                
+
                                 Rules:
                                 - If the user explicitly asks to skip, change the topic, or move to something else: reply only with a brief 5-12 word acknowledgment like "Sure, let's talk about something else." Nothing more.
                                 - If the user says they didn't understand the question, seems confused, or asks you to explain/repeat it: reply only with a brief 5-15 word acknowledgment like "No worries, let me simplify that for you." Do NOT restate or answer the question yourself — a simpler version of the question will be asked separately.
@@ -280,14 +287,14 @@ public class AiServiceImpl implements AiService {
                                 - Do NOT evaluate, score, or judge the user.
                                 - Do NOT use generic filler phrases like "That's a great point", "That's awesome", "It's great that", "You seem to be" — respond naturally and specifically instead.
                                 - Keep it warm, casual, and human — like a real friend replying in chat, not motivational commentary.
-                
+
                                 English Improvement Rules:
                                 - If the response is understandable and mostly grammatically correct, just react naturally — do not rewrite it.
                                 - If the response has major grammar mistakes or broken structure (more than 50%% incorrect), silently rewrite it into a natural, correct version instead of your normal reaction.
                                 - Do NOT add any label like "Natural English Version:" — give the corrected sentence directly as your response.
                                 - Do NOT explain grammar rules.
                                 - Do NOT mention words like "grammar", "incorrect", "wrong", or "error".
-                
+
                                 Return only the response text, nothing else.
                                 """,
                                 question,
@@ -333,7 +340,13 @@ public class AiServiceImpl implements AiService {
 
             ObjectMapper mapper = new ObjectMapper();
 
-            return mapper.readTree(response.getBody()).path("choices").get(0).path("message").path("content").asText();
+            return mapper
+                    .readTree(response.getBody())
+                    .path("choices")
+                    .get(0)
+                    .path("message")
+                    .path("content")
+                    .asText();
 
         } catch (Exception e) {
 
@@ -375,21 +388,21 @@ public class AiServiceImpl implements AiService {
                         String.format(
                                 """
                                 You are an expert technical interviewer.
-    
+
                                 Topic:
                                 %s
-    
+
                                 Previously Asked Questions (latest 20 from the same topic, mode, and difficulty — this list is authoritative; the last item in it IS the question that was just asked):
                                 %s
-    
+
                                 Candidate's Latest Answer:
                                 %s
-    
+
                                 Difficulty Guidance:
                                 %s
-    
+
                                 Your task is to generate the next interview question.
-    
+
                                 Rules:
                                 - If the candidate's latest answer explicitly asks to skip or change the topic/question: pick a genuinely new concept or subtopic within "%s" that is unrelated to the recent question thread, and ask that as a fresh question.
                                 - If the candidate's latest answer indicates confusion (e.g. "I didn't get your question", "I don't understand", "can you repeat", "explain simply"): take the LAST question from Previously Asked Questions and return a simpler, shorter rewording of that exact same question. Never claim no previous question exists — the list always contains one.
@@ -403,7 +416,7 @@ public class AiServiceImpl implements AiService {
                                 - The question must be fully answerable by speaking — never ask the user to write code, write formulas, draw a diagram, or produce written output.
                                 - Around 80%% conceptual/theoretical questions and 20%% applied/scenario-based questions (explained verbally).
                                 - Small logic-based or scenario-based questions are allowed occasionally, but only in a form the user can explain verbally.
-                                - Ask the question directly — do NOT add a reflective/empathetic preamble commenting on the previous answer (e.g. no "That's interesting" or "Great point" before the question).
+                                - Ask the question directly — do NOT add a reflective/empathetic preamble commenting on the previous answer.
                                 - Keep the question under 30 words, single sentence, no compound double-clause questions.
                                 - Questions should match the difficulty level.
                                 - Do NOT ask multiple questions.
@@ -422,29 +435,29 @@ public class AiServiceImpl implements AiService {
                         String.format(
                                 """
                                 You are a friendly AI friend having a natural conversation.
-    
+
                                 Topic:
                                 %s
-    
+
                                 Previously Asked Questions (this list is authoritative; the last item in it IS the question that was just asked):
                                 %s
-    
+
                                 User's Last Answer:
                                 %s
-    
+
                                 Your task is to continue the conversation naturally.
-    
+
                                 Rules:
                                 - If the user's last answer explicitly asks to skip, change the topic, or talk about something else: pick a genuinely new, unrelated topic direction and ask a fresh question about it.
-                                - If the user's last answer indicates confusion (e.g. "I didn't get your question", "I don't understand", "can you repeat", "explain simply"): take the LAST question from Previously Asked Questions and return a simpler, shorter rewording of that exact same question in a casual tone. Never claim no previous question exists — the list always contains one.
+                                - If the user's last answer indicates confusion: take the LAST question from Previously Asked Questions and return a simpler, shorter rewording of that exact same question.
                                 - Otherwise, ask EXACTLY ONE follow-up question.
                                 - NEVER repeat or rephrase any previously asked question.
-                                - Avoid circling back to the same theme or subtopic repeatedly (e.g. exercise, daily routine, obstacles) — after 1-2 questions on a theme, move to a genuinely different one.
-                                - Vary the question's structure/phrasing style — avoid repeatedly using the same sentence template (e.g. "How do you think X influences Y?") across consecutive questions.
-                                - Use the user's last answer to pick a natural next direction — react to what they actually said and steer toward a related but new aspect of the topic, the way a real friend would in conversation.
-                                - Ask the question directly — do NOT prefix it with a reflective/empathetic comment on the previous answer (e.g. no "That's really impressive that..." or "That's a really powerful image..." before the question).
-                                - Keep the question under 20 words, single sentence, no compound double-clause questions.
-                                - Sound casual, warm, and human — not like a survey.
+                                - Avoid circling back to the same theme repeatedly.
+                                - Vary the question's structure and phrasing.
+                                - Use the user's last answer to pick a natural next direction.
+                                - Ask the question directly.
+                                - Keep the question under 20 words, single sentence.
+                                - Sound casual, warm, and human.
                                 - Return ONLY the question text.
                                 - Do not provide explanations, comments, feedback, numbering, or multiple questions.
                                 """,
@@ -457,28 +470,28 @@ public class AiServiceImpl implements AiService {
                         String.format(
                                 """
                                 You are an English speaking coach.
-    
+
                                 Topic:
                                 %s
-    
+
                                 Previously Asked Questions (this list is authoritative; the last item in it IS the question that was just asked):
                                 %s
-    
+
                                 User's Last Answer:
                                 %s
-    
+
                                 Your task is to ask the next practice question.
-    
+
                                 Rules:
-                                - If the user's last answer explicitly asks to skip or change the topic: pick a genuinely new, unrelated topic direction and ask a fresh simple question about it.
-                                - If the user's last answer indicates confusion (e.g. "I didn't get your question", "I don't understand", "can you repeat"): take the LAST question from Previously Asked Questions and return a simpler, shorter rewording of that exact same question. Never claim no previous question exists — the list always contains one.
+                                - If the user's last answer explicitly asks to skip or change the topic: pick a genuinely new, unrelated topic direction.
+                                - If the user's last answer indicates confusion: return a simpler, shorter rewording of the last question.
                                 - Otherwise, ask EXACTLY ONE simple follow-up question.
                                 - NEVER repeat or rephrase any previously asked question.
-                                - Avoid circling back to the same theme repeatedly — after 1-2 questions on a theme, move to a genuinely different one.
-                                - Vary the question's structure/phrasing style — avoid repeatedly using the same sentence template across consecutive questions.
-                                - Explore a different aspect of the topic to build vocabulary, fluency, confidence, and sentence formation.
-                                - Use the user's last answer to judge their comfort level: if their answer was short, broken, or hesitant, keep the next question simple and easy to answer; if their answer was fluent and confident, ask something slightly more expressive or descriptive.
-                                - Ask the question directly — do NOT add a reflective preamble before it.
+                                - Avoid circling back to the same theme repeatedly.
+                                - Vary the question's structure and phrasing.
+                                - Explore different aspects of the topic.
+                                - Use the user's last answer to judge their comfort level.
+                                - Ask the question directly.
                                 - Use easy and natural English.
                                 - Keep the question under 20 words.
                                 - Return ONLY the question text.
@@ -493,9 +506,6 @@ public class AiServiceImpl implements AiService {
                         throw new IllegalStateException(
                                 "Unexpected mode: " + mode);
             };
-
-
-
 
             String groqUrl =
                     "https://api.groq.com/openai/v1/chat/completions";
@@ -548,7 +558,6 @@ public class AiServiceImpl implements AiService {
         }
     }
 
-    //
     @Override
     public SessionReportDto generateSessionReport(
             String conversationHistory,
@@ -562,20 +571,20 @@ public class AiServiceImpl implements AiService {
                         String.format(
                                 """
                                 You are an expert technical interviewer.
-    
+
                                 Analyze the following interview conversation.
-    
+
                                 %s
-    
+
                                 Return ONLY valid JSON in this exact format:
-    
+
                                 {
                                   "overallEvaluation":"...",
                                   "strengths":"...",
                                   "areasOfImprovement":"...",
                                   "recommendations":"..."
                                 }
-    
+
                                 Rules:
                                 - Return valid JSON only.
                                 - Do not use markdown.
@@ -593,20 +602,20 @@ public class AiServiceImpl implements AiService {
                         String.format(
                                 """
                                 You are a conversation analyst.
-    
+
                                 Analyze the following conversation.
-    
+
                                 %s
-    
+
                                 Return ONLY valid JSON in this exact format:
-    
+
                                 {
                                   "overallEvaluation":"...",
                                   "strengths":"...",
                                   "areasOfImprovement":"...",
                                   "recommendations":"..."
                                 }
-    
+
                                 Rules:
                                 - Return valid JSON only.
                                 - Do not use markdown.
@@ -624,20 +633,20 @@ public class AiServiceImpl implements AiService {
                         String.format(
                                 """
                                 You are an English communication evaluator.
-    
+
                                 Analyze the following conversation.
-    
+
                                 %s
-    
+
                                 Return ONLY valid JSON in this exact format:
-    
+
                                 {
                                   "overallEvaluation":"...",
                                   "strengths":"...",
                                   "areasOfImprovement":"...",
                                   "recommendations":"..."
                                 }
-    
+
                                 Rules:
                                 - Return valid JSON only.
                                 - Do not use markdown.
@@ -737,18 +746,18 @@ public class AiServiceImpl implements AiService {
         String prompt = String.format(
                 """
                 You are an expert tutor.
-    
+
                 Question:
                 %s
-    
+
                 Mode:
                 %s
-    
+
                 Difficulty:
                 %s
-    
+
                 Generate an ideal answer.
-    
+
                 Rules:
                 - Answer the question directly.
                 - Keep the answer concise.
@@ -762,6 +771,352 @@ public class AiServiceImpl implements AiService {
         );
 
         return callGroq(prompt);
+    }
+
+    // =========================================================
+    // CUSTOM PRACTICE
+    // =========================================================
+
+    @Override
+    public AiQuestionExtractionDto extractCustomPracticeQuestions(
+            String content) {
+
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Question content cannot be empty."
+            );
+        }
+
+        try {
+
+            String prompt = """
+                    You are a question extraction system.
+
+                    The user will provide raw, unstructured text containing
+                    one or more questions they want to practice.
+
+                    USER CONTENT:
+                    %s
+
+                    Your task is to identify and extract every actual question.
+
+                    IMPORTANT RULES:
+                    - The input may contain numbered questions, bullet points,
+                      commas, semicolons, line breaks, paragraphs, or inconsistent formatting.
+                    - Questions may not always end with a question mark.
+                    - Use meaning and context to determine question boundaries.
+                    - Clean grammar and formatting when necessary.
+                    - Preserve the original meaning of every question.
+                    - Do NOT answer any question.
+                    - Do NOT invent new questions.
+                    - Do NOT silently remove duplicate or similar questions.
+                    - Preserve logically connected compound questions as ONE question.
+                    - Do NOT aggressively split related concepts that form one natural question.
+                    - Remove numbering, bullet symbols, and unnecessary prefixes such as "Q:", "Question:", etc.
+                    - Preserve the original question order.
+                    - Return at most 100 questions.
+                    - Every returned item must contain one complete practice question.
+
+                    Return ONLY valid JSON in exactly this structure:
+
+                    {
+                      "questions": [
+                        "Question 1",
+                        "Question 2"
+                      ]
+                    }
+
+                    Do not return markdown.
+                    Do not return code fences.
+                    Do not return explanations.
+                    Do not return any text before or after the JSON.
+                    """.formatted(content);
+
+            String aiResponse = callGroq(prompt);
+
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(aiResponse);
+            JsonNode questionsNode = root.path("questions");
+
+            if (!questionsNode.isArray()) {
+                throw new IllegalStateException(
+                        "Groq returned an invalid question extraction response."
+                );
+            }
+
+            List<String> questions = new ArrayList<>();
+
+            for (JsonNode questionNode : questionsNode) {
+
+                String question = questionNode.asText().trim();
+
+                if (!question.isBlank()) {
+                    questions.add(question);
+                }
+            }
+
+            if (questions.isEmpty()) {
+                throw new IllegalStateException(
+                        "No questions could be extracted from the provided content."
+                );
+            }
+
+            if (questions.size() > 100) {
+                throw new IllegalStateException(
+                        "A maximum of 100 questions can be extracted per practice session."
+                );
+            }
+
+            return new AiQuestionExtractionDto(questions);
+
+        } catch (RuntimeException e) {
+            throw e;
+
+        } catch (Exception e) {
+
+            throw new RuntimeException(
+                    "Unable to extract custom practice questions: "
+                            + e.getMessage(),
+                    e
+            );
+        }
+    }
+
+    @Override
+    public AiAnswerEvaluationDto evaluateCustomPracticeAnswer(
+            String question,
+            String answer) {
+
+        if (question == null || question.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Question cannot be empty."
+            );
+        }
+
+        if (answer == null || answer.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Answer cannot be empty."
+            );
+        }
+
+        try {
+
+            String prompt = """
+                    You are an expert evaluator assessing whether a user's
+                    recalled answer to a question is factually correct.
+
+                    QUESTION:
+                    %s
+
+                    USER ANSWER:
+                    %s
+
+                    Evaluate ONLY the answer to the current question.
+
+                    Do not use or assume any previous or future questions.
+
+                    CLASSIFICATION:
+
+                    CORRECT
+                    - The core answer is factually accurate.
+                    - Minor omissions that do not affect the main concept are acceptable.
+
+                    PARTIALLY_CORRECT
+                    - The user demonstrates correct understanding,
+                      but an important concept or detail is missing,
+                      incomplete, or partly inaccurate.
+
+                    INCORRECT
+                    - The core concept is wrong.
+                    - The answer does not actually answer the question.
+                    - The user says they do not know or cannot remember.
+                    - The response contains no meaningful attempt.
+
+                    SCORING:
+                    - Return an integer score from 0 to 100.
+                    - CORRECT should normally score 75-100.
+                    - PARTIALLY_CORRECT should normally score 40-74.
+                    - INCORRECT should normally score 0-39.
+                    - Base the score on factual correctness and completeness.
+                    - Do not reward verbosity.
+
+                    FEEDBACK:
+                    - Feedback must be between 20 and 35 words.
+                    - Be direct and educational.
+                    - If correct, briefly confirm why.
+                    - If partially correct, explain what important concept is missing or inaccurate.
+                    - If incorrect, explain the correct concept/answer.
+                    - The correct answer may be revealed immediately.
+                    - Do not ask another question.
+                    - Do not use motivational filler.
+                    - Do not mention the numeric score inside the feedback.
+
+                    Return ONLY valid JSON in exactly this structure:
+
+                    {
+                      "status": "CORRECT",
+                      "score": 90,
+                      "feedback": "..."
+                    }
+
+                    status MUST be exactly one of:
+                    CORRECT
+                    PARTIALLY_CORRECT
+                    INCORRECT
+
+                    Do not return markdown.
+                    Do not return code fences.
+                    Do not return any text before or after the JSON.
+                    """.formatted(question, answer);
+
+            String aiResponse = callGroq(prompt);
+
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(aiResponse);
+
+            String statusValue = root
+                    .path("status")
+                    .asText()
+                    .trim()
+                    .toUpperCase();
+
+            int score = root
+                    .path("score")
+                    .asInt(-1);
+
+            String feedback = root
+                    .path("feedback")
+                    .asText()
+                    .trim();
+
+            AnswerEvaluationStatus status;
+
+            try {
+                status = AnswerEvaluationStatus.valueOf(statusValue);
+
+            } catch (IllegalArgumentException e) {
+
+                throw new IllegalStateException(
+                        "Groq returned an invalid evaluation status."
+                );
+            }
+
+            if (score < 0 || score > 100) {
+                throw new IllegalStateException(
+                        "Groq returned an invalid evaluation score."
+                );
+            }
+
+            if (feedback.isBlank()) {
+                throw new IllegalStateException(
+                        "Groq returned empty evaluation feedback."
+                );
+            }
+
+            validateEvaluationConsistency(status, score);
+
+            return new AiAnswerEvaluationDto(
+                    status,
+                    score,
+                    feedback
+            );
+
+        } catch (RuntimeException e) {
+            throw e;
+
+        } catch (Exception e) {
+
+            throw new RuntimeException(
+                    "Unable to evaluate custom practice answer: "
+                            + e.getMessage(),
+                    e
+            );
+        }
+    }
+
+    @Override
+    public String generateCustomPracticeOverallFeedback(
+            String practiceSummary) {
+
+        if (practiceSummary == null || practiceSummary.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Practice summary cannot be empty."
+            );
+        }
+
+        String prompt = """
+                You are an expert learning and revision coach.
+
+                Analyze the following completed or partial practice session.
+
+                PRACTICE SUMMARY:
+                %s
+
+                Generate a concise overall assessment for the user.
+
+                Rules:
+                - Focus on knowledge recall and answer accuracy.
+                - Identify the user's strongest areas.
+                - Identify concepts that require revision.
+                - Pay attention to questions that were incorrect,
+                  partially correct, skipped, or required a second attempt.
+                - If the session ended early, do not judge unanswered questions
+                  as incorrect.
+                - Give practical revision recommendations.
+                - Do not invent topics or performance information
+                  that is not present in the summary.
+                - Do not recalculate or contradict the provided scores.
+                - Keep the response between 70 and 130 words.
+                - Use clear, concise language.
+                - Do not use markdown headings.
+                - Do not return JSON.
+                - Return only the assessment text.
+                """.formatted(practiceSummary);
+
+        String feedback = callGroq(prompt);
+
+        if (feedback == null || feedback.isBlank()) {
+            throw new IllegalStateException(
+                    "Groq returned empty overall practice feedback."
+            );
+        }
+
+        return feedback.trim();
+    }
+
+    private void validateEvaluationConsistency(
+            AnswerEvaluationStatus status,
+            int score) {
+
+        switch (status) {
+
+            case CORRECT -> {
+
+                if (score < 75) {
+                    throw new IllegalStateException(
+                            "CORRECT evaluation cannot have a score below 75."
+                    );
+                }
+            }
+
+            case PARTIALLY_CORRECT -> {
+
+                if (score < 40 || score > 74) {
+                    throw new IllegalStateException(
+                            "PARTIALLY_CORRECT evaluation must have a score between 40 and 74."
+                    );
+                }
+            }
+
+            case INCORRECT -> {
+
+                if (score > 39) {
+                    throw new IllegalStateException(
+                            "INCORRECT evaluation cannot have a score above 39."
+                    );
+                }
+            }
+        }
     }
 
     private String callGroq(String prompt) {
