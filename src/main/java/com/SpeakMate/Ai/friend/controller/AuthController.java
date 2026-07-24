@@ -1,10 +1,14 @@
 package com.SpeakMate.Ai.friend.controller;
 
 import com.SpeakMate.Ai.friend.dto.AuthResponseDto;
+import com.SpeakMate.Ai.friend.dto.ForgotPasswordRequestDto;
 import com.SpeakMate.Ai.friend.dto.LoginRequestDto;
 import com.SpeakMate.Ai.friend.dto.RegisterRequestDto;
+import com.SpeakMate.Ai.friend.dto.ResetPasswordRequestDto;
 import com.SpeakMate.Ai.friend.dto.VerifyOtpRequestDto;
+import com.SpeakMate.Ai.friend.dto.VerifyPasswordResetOtpRequestDto;
 import com.SpeakMate.Ai.friend.service.AuthService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,7 +26,6 @@ public class AuthController {
     public ResponseEntity<String> sendOtp(
             @RequestParam String email
     ) {
-
         return ResponseEntity.ok(
                 authService.sendRegistrationOtp(email)
         );
@@ -32,7 +35,6 @@ public class AuthController {
     public ResponseEntity<String> resendOtp(
             @RequestParam String email
     ) {
-
         return ResponseEntity.ok(
                 authService.sendRegistrationOtp(email)
         );
@@ -40,9 +42,8 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<String> register(
-            @RequestBody RegisterRequestDto request
+            @Valid @RequestBody RegisterRequestDto request
     ) {
-
         return ResponseEntity.ok(
                 authService.register(request)
         );
@@ -50,9 +51,8 @@ public class AuthController {
 
     @PostMapping("/verify-otp")
     public ResponseEntity<String> verifyOtp(
-            @RequestBody VerifyOtpRequestDto request
+            @Valid @RequestBody VerifyOtpRequestDto request
     ) {
-
         return ResponseEntity.ok(
                 authService.verifyOtp(request)
         );
@@ -60,11 +60,46 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDto> login(
-            @RequestBody LoginRequestDto request
+            @Valid @RequestBody LoginRequestDto request
     ) {
-
         return ResponseEntity.ok(
                 authService.login(request)
+        );
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequestDto request
+    ) {
+        return ResponseEntity.ok(
+                authService.forgotPassword(request)
+        );
+    }
+
+    @PostMapping("/forgot-password/resend-otp")
+    public ResponseEntity<String> resendPasswordResetOtp(
+            @RequestParam String email
+    ) {
+        return ResponseEntity.ok(
+                authService.resendPasswordResetOtp(email)
+        );
+    }
+
+    @PostMapping("/forgot-password/verify-otp")
+    public ResponseEntity<String> verifyPasswordResetOtp(
+            @Valid @RequestBody VerifyPasswordResetOtpRequestDto request
+    ) {
+        return ResponseEntity.ok(
+                authService.verifyPasswordResetOtp(request)
+        );
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(
+            @Valid @RequestBody ResetPasswordRequestDto request
+    ) {
+        return ResponseEntity.ok(
+                authService.resetPassword(request)
         );
     }
 }

@@ -1,5 +1,6 @@
 package com.SpeakMate.Ai.friend.entities;
 
+import com.SpeakMate.Ai.friend.enumeration.OtpPurpose;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -17,22 +18,34 @@ public class EmailVerificationOtp {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String email;
 
+    @Column(nullable = false)
     private String otp;
 
+    @Column(nullable = false)
     private Integer attemptCount;
 
+    @Column(nullable = false)
     private LocalDateTime expiresAt;
 
+    @Column(nullable = false)
     private Boolean verified;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private OtpPurpose purpose;
+
+    @Column(nullable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
     public void prePersist() {
 
-        createdAt = LocalDateTime.now();
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
 
         if (attemptCount == null) {
             attemptCount = 0;
