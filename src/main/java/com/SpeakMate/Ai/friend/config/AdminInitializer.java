@@ -24,11 +24,8 @@ public class AdminInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
 
-        boolean adminExists = userRepository.findAll()
-                .stream()
-                .anyMatch(user -> user.getRole() == Role.ADMIN);
-
-        if (!adminExists) {
+        // Create admin only if one doesn't already exist
+        if (!userRepository.existsByRole(Role.ADMIN)) {
 
             User admin = new User();
 
@@ -44,7 +41,7 @@ public class AdminInitializer implements CommandLineRunner {
 
             userRepository.save(admin);
 
-            System.out.println("Admin user created successfully.");
+            System.out.println("✅ Admin user created successfully.");
         }
     }
 }
