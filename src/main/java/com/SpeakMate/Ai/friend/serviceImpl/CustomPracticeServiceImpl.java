@@ -690,6 +690,13 @@ public class CustomPracticeServiceImpl
             );
         }
 
+        /*
+         * If the user paused AFTER submitting/skipping the
+         * current question but BEFORE pressing Continue,
+         * move the session to the next valid question.
+         */
+        moveToNextActionableQuestionOnResume(session);
+
         session.setStatus(
                 CustomPracticeStatus.ACTIVE
         );
@@ -703,6 +710,90 @@ public class CustomPracticeServiceImpl
         return buildSessionDto(saved);
     }
 
+    private void moveToNextActionableQuestionOnResume(
+            CustomPracticeSession session) {
+
+        CustomPracticeQuestion currentQuestion =
+                getCurrentQuestion(session);
+
+        /*
+         * ROUND 1:
+         * If the current question was already submitted or skipped,
+         * move forward exactly as Continue would have done.
+         */
+        if (session.getCurrentRound() == 1) {
+
+            if (!isRoundOneQuestionProcessed(currentQuestion)) {
+                return;
+            }
+
+            List<CustomPracticeQuestion> questions =
+                    getOrderedQuestions(session);
+
+            int nextIndex =
+                    session.getCurrentQuestionIndex() + 1;
+
+            // More Round 1 questions are available.
+            if (nextIndex < questions.size()) {
+
+                session.setCurrentQuestionIndex(nextIndex);
+                return;
+            }
+
+            /*
+             * Round 1 is finished.
+             * Check whether any questions need a retry.
+             */
+            List<CustomPracticeQuestion> retryQuestions =
+                    getPendingRetryQuestions(session);
+
+            if (!retryQuestions.isEmpty()) {
+
+                CustomPracticeQuestion firstRetry =
+                        retryQuestions.get(0);
+
+                session.setCurrentRound(2);
+
+                session.setCurrentQuestionIndex(
+                        findQuestionIndex(
+                                questions,
+                                firstRetry
+                        )
+                );
+            }
+
+            return;
+        }
+
+        /*
+         * ROUND 2:
+         * If the retry was already processed before pausing,
+         * move to the next pending retry question.
+         */
+        if (session.getCurrentRound() == 2
+                && Boolean.TRUE.equals(
+                currentQuestion.getRetryCompleted())) {
+
+            List<CustomPracticeQuestion> retryQuestions =
+                    getPendingRetryQuestions(session);
+
+            if (!retryQuestions.isEmpty()) {
+
+                List<CustomPracticeQuestion> questions =
+                        getOrderedQuestions(session);
+
+                CustomPracticeQuestion nextRetry =
+                        retryQuestions.get(0);
+
+                session.setCurrentQuestionIndex(
+                        findQuestionIndex(
+                                questions,
+                                nextRetry
+                        )
+                );
+            }
+        }
+    }
     // =========================================================
     // END SESSION
     // =========================================================
