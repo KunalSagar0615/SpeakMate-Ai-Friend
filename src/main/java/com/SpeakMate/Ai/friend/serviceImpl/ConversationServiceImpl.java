@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ConversationServiceImpl implements ConversationService {
@@ -111,7 +112,9 @@ public class ConversationServiceImpl implements ConversationService {
         return ConversationMapper.toDto(savedConversation);
     }
 
+
     @Override
+    @Transactional
     public AnswerResponseDto submitAnswer(
             AnswerRequestDto requestDto) {
 
@@ -129,7 +132,8 @@ public class ConversationServiceImpl implements ConversationService {
         String feedback =
                 aiService.generateFeedback(
                         currentConversation.getAiQuestion(),
-                        requestDto.getAnswer(),currentConversation.getSession().getMode());
+                        requestDto.getAnswer(),
+                        currentConversation.getSession().getMode());
 
         currentConversation.setAiFeedback(feedback);
 
@@ -138,30 +142,17 @@ public class ConversationServiceImpl implements ConversationService {
         Session session =
                 currentConversation.getSession();
 
-//        List<Conversation> conversations =
-//                conversationRepository.findBySessionId(session.getId());
-//
-//        List<String> questions = conversations.stream()
-//                .map(Conversation::getAiQuestion)
-//                .filter(question -> question != null && !question.isBlank())
-//                .toList();
-//
-//        int start = Math.max(0, questions.size() - 15);
-//
-//        String previousQuestions = String.join(
-//                "\n",
-//                questions.subList(start, questions.size())
-//        );
         Pageable pageable = PageRequest.of(0, 20);
 
         List<Conversation> conversations =
-                conversationRepository.findRecentQuestionsByUserAndTopicAndModeAndDifficulty(
-                        session.getUser().getId(),
-                        session.getTopic(),
-                        session.getMode(),
-                        session.getDifficultyLevel(),
-                        pageable
-                );
+                conversationRepository
+                        .findRecentQuestionsByUserAndTopicAndModeAndDifficulty(
+                                session.getUser().getId(),
+                                session.getTopic(),
+                                session.getMode(),
+                                session.getDifficultyLevel(),
+                                pageable
+                        );
 
         String previousQuestions = conversations.stream()
                 .map(Conversation::getAiQuestion)
