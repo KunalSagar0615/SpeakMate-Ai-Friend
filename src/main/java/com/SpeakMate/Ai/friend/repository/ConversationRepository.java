@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import com.SpeakMate.Ai.friend.enumeration.DifficultyLevel;
 import com.SpeakMate.Ai.friend.enumeration.SessionMode;
@@ -45,4 +46,16 @@ ORDER BY c.id DESC
             Pageable pageable
     );
 
+    long count();
+
+    @Query("""
+       SELECT COUNT(c)
+       FROM Conversation c
+       WHERE c.session.startTime >= :start
+       AND c.session.startTime < :end
+       """)
+    long countBySessionStartTimeBetween(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
 }

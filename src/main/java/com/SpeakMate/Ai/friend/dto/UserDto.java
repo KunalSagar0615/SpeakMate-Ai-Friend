@@ -18,12 +18,13 @@ public class UserDto {
     @NotBlank(message = "Name is required")
     private String name;
 
+    private String username;
+
+    private String mobileNumber;
+
     @Email(message = "Invalid email format")
     @NotBlank(message = "Email is required")
     private String email;
-
-    @NotBlank(message = "Password is required")
-    private String password;
 
     @NotNull(message = "Role is required")
     private Role role;

@@ -4,6 +4,7 @@ import com.SpeakMate.Ai.friend.entities.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import com.SpeakMate.Ai.friend.enumeration.Role;
 
@@ -18,4 +19,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
 
     boolean existsByRole(Role role);
+
+    long count();
+
+    long countByCreatedAtBetween(
+            LocalDateTime start,
+            LocalDateTime end
+    );
 }
