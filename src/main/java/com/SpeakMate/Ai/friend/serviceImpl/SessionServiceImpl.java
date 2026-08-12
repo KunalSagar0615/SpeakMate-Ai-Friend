@@ -130,11 +130,21 @@ public class SessionServiceImpl implements SessionService {
         List<Conversation> conversations =
                 conversationRepository.findBySessionId(sessionId);
 
-        int totalQuestions = conversations.size();
+        int totalQuestions = (int) conversations.stream()
+                .filter(c -> c.getUserAnswer() != null)
+                .filter(c -> !c.getUserAnswer().isBlank())
+                .count();
 
-        int totalScore = conversationRepository.sumScoreBySessionId(sessionId);
+        int totalScore =
+                conversationRepository.sumScoreBySessionId(sessionId);
 
-        double averageScore =conversationRepository.averageScoreBySessionId(sessionId);
+        double averageScore =
+                conversationRepository.averageScoreBySessionId(sessionId);
+
+        long totalConversations = conversations.stream()
+                .filter(c -> c.getUserAnswer() != null)
+                .filter(c -> !c.getUserAnswer().isBlank())
+                .count();
 
         return new SessionSummaryDto(
                 session.getId(),
@@ -142,7 +152,7 @@ public class SessionServiceImpl implements SessionService {
                 totalQuestions,
                 totalScore,
                 averageScore,
-                conversationRepository.countBySessionId(sessionId)
+                totalConversations
         );
     }
 
@@ -170,8 +180,7 @@ public class SessionServiceImpl implements SessionService {
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
-                                "Session not found with id : "
-                                        + sessionId));
+                                "Session not found with id : " + sessionId));
 
         List<Conversation> conversations =
                 conversationRepository.findBySessionId(sessionId);
@@ -180,12 +189,19 @@ public class SessionServiceImpl implements SessionService {
 
         for (Conversation conversation : conversations) {
 
+            String answer = conversation.getUserAnswer();
+
+            // Skip the final unanswered/generated question
+            if (answer == null || answer.isBlank()) {
+                continue;
+            }
+
             history.append("Question: ")
                     .append(conversation.getAiQuestion())
                     .append("\n");
 
             history.append("Answer: ")
-                    .append(conversation.getUserAnswer())
+                    .append(answer)
                     .append("\n");
 
             history.append("Feedback: ")
@@ -195,7 +211,8 @@ public class SessionServiceImpl implements SessionService {
 
         SessionReportDto report =
                 aiService.generateSessionReport(
-                        history.toString(),session.getMode());
+                        history.toString(),
+                        session.getMode());
 
         report.setSessionId(session.getId());
 
