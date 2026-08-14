@@ -6,4 +6,6 @@ public interface MailService {
             String email,
             String otp
     );
+
+    void sendLoginFailedAlertEmail(String email);
 }

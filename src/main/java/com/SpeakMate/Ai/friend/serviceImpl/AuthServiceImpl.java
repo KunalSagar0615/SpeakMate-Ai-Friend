@@ -31,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import com.SpeakMate.Ai.friend.service.LoginRateLimitService;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -43,48 +44,41 @@ public class AuthServiceImpl implements AuthService {
     private final EmailVerificationOtpRepository otpRepository;
     private final PasswordEncoder passwordEncoder;
     private final MailService mailService;
-
+    private final LoginRateLimitService loginRateLimitService;
     private final SecureRandom secureRandom = new SecureRandom();
 
-    public AuthServiceImpl(
-            UserRepository userRepository,
+    public AuthServiceImpl(UserRepository userRepository,
             EmailVerificationOtpRepository otpRepository,
             MailService mailService,
             PasswordEncoder passwordEncoder,
-            JwtUtil jwtUtil
+            JwtUtil jwtUtil,
+            LoginRateLimitService loginRateLimitService
     ) {
         this.userRepository = userRepository;
         this.otpRepository = otpRepository;
         this.mailService = mailService;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
+        this.loginRateLimitService = loginRateLimitService;
     }
 
     @Override
     public String register(RegisterRequestDto request) {
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new EmailAlreadyExistsException(
-                    "Email already registered"
-            );
+            throw new EmailAlreadyExistsException("Email already registered");
         }
 
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new UsernameAlreadyExistsException(
-                    "Username already exists"
-            );
+            throw new UsernameAlreadyExistsException("Username already exists");
         }
 
         User user = new User();
-
         user.setName(request.getName());
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
 
-        user.setPassword(
-                passwordEncoder.encode(request.getPassword())
-        );
-
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setMobileNumber(request.getMobileNumber());
         user.setHighestEducation(request.getHighestEducation());
         user.setCurrentOccupation(request.getCurrentOccupation());
@@ -102,29 +96,51 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponseDto login(LoginRequestDto request) {
 
+        String username = request.getUsername();
+
+        // 1. Check whether the account is temporarily blocked
+        if (loginRateLimitService.isBlocked(username)) {
+            throw new InvalidCredentialsException(
+                    "Too many failed login attempts. Please try again after 15 minutes."
+            );
+        }
+
         User user = userRepository
-                .findByUsername(request.getUsername())
+                .findByUsername(username)
                 .orElseThrow(() ->
                         new UserNotFoundException(
                                 "User not found"
                         )
                 );
 
+        // 2. Check password
         if (!passwordEncoder.matches(
                 request.getPassword(),
                 user.getPassword()
         )) {
-            throw new InvalidCredentialsException(
-                    "Invalid username or password"
-            );
+
+            // Record failed attempt
+            loginRateLimitService.recordFailedAttempt(username);
+
+            // Send security alert after the 5th failed attempt
+            if (loginRateLimitService.isBlocked(username)) {
+                mailService.sendLoginFailedAlertEmail(user.getEmail());
+            }
+
+            throw new InvalidCredentialsException("Invalid username or password");
         }
 
+        // 3. Successful login → reset failed attempts
+        loginRateLimitService.resetAttempts(username);
+
+        // 4. Check email verification
         if (!Boolean.TRUE.equals(user.getEmailVerified())) {
             throw new EmailNotVerifiedException(
                     "Please verify your email first"
             );
         }
 
+        // 5. Generate JWT
         String token = jwtUtil.generateToken(
                 user.getId(),
                 user.getUsername(),
