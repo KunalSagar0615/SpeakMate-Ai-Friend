@@ -18,7 +18,7 @@ public class CorsConfig {
 
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:5173",
-                "https://speakmate-ai-friend.netlify.app"
+                "https://prepfriend.netlify.app"
         ));
 
         configuration.setAllowedMethods(List.of("GET","POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
