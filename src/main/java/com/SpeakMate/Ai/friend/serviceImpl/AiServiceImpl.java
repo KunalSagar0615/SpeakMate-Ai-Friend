@@ -29,17 +29,13 @@ public class AiServiceImpl implements AiService {
     private final RestTemplate restTemplate;
 
     @Autowired
-    public AiServiceImpl(
-            GroqConfig groqConfig,
-            RestTemplate restTemplate) {
-
+    public AiServiceImpl(GroqConfig groqConfig, RestTemplate restTemplate) {
         this.groqConfig = groqConfig;
         this.restTemplate = restTemplate;
     }
 
     @Override
-    public String generateQuestion(
-            String topic,
+    public String generateQuestion(String topic,
             SessionMode mode,
             DifficultyLevel difficultyLevel) {
 
